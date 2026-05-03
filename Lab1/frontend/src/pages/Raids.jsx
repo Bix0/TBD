@@ -13,7 +13,8 @@ function Raids() {
     // Asumiendo que tu Spring Boot corre en el puerto 8080
     axios.get('http://localhost:8080/api/raids')
       .then(response => {
-        setRaids(response.data); // Guardamos el JSON real de la BD
+        setRaids(response.data);
+        console.log("¡MIRA AQUÍ! Estos son los datos reales:", response.data); // Guardamos el JSON real de la BD
       })
       .catch(error => {
         console.error("Error conectando al backend:", error);
@@ -59,21 +60,28 @@ function Raids() {
       {/* Grilla de Raids (Adaptada a los nombres de tu Raid.java) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px', marginTop: '30px' }}>
         
+        
+
+
         {raids
           .filter(raid => {
-            // Filtrar por Item Level
-            const cumpleNivel = Ilvfiltro >= raid.item_level_requerido;
+            // 1. LA MATEMÁTICA CORRECTA Y EL NOMBRE CORRECTO
+            const cumpleNivel = raid.item_level_requerido >= Ilvfiltro;
             
-            // Filtrar por Rol
             const rolBuscado = Rolfiltro.toLowerCase();
             let cumpleRol = true;
-            if (rolBuscado === 'tanque') cumpleRol = raid.cupos_tanque > 0;
-            else if (rolBuscado === 'healer') cumpleRol = raid.cupos_healer > 0;
-            else if (rolBuscado === 'dps') cumpleRol = raid.cupos_dps > 0;
+            
+            if (rolBuscado !== 'todos') {
+               // 2. VOLVEMOS A LOS GUIONES BAJOS
+               if (rolBuscado === 'tanque') cumpleRol = raid.cupos_tanque > 0;
+               else if (rolBuscado === 'healer') cumpleRol = raid.cupos_healer > 0;
+               else if (rolBuscado === 'dps') cumpleRol = raid.cupos_dps > 0;
+            }
 
             return cumpleNivel && cumpleRol;
           })
           .map(raid => (
+            // 3. VOLVEMOS AL ID CON GUION BAJO
             <div key={raid.id_raid} style={{ border: '1px solid #444', padding: '20px', borderRadius: '8px', backgroundColor: '#1a1a1a', color: 'white' }}>
               <h3 style={{ margin: '0 0 5px 0', color: '#61dafb' }}>{raid.nombre}</h3>
               <p style={{ margin: '0 0 15px 0', fontSize: '12px', color: '#888' }}>
@@ -105,6 +113,9 @@ function Raids() {
             </div>
           ))
         }
+
+
+
         </div> {/* Fin de la grilla de raids */}
         </div> {/* Fin del contenedor principal */}
 

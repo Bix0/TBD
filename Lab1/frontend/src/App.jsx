@@ -1,7 +1,11 @@
+/*
+/*
+
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import RaidFilterBar from './components/RaidFilterBar';
 import Login from './components/Login';
+import Inventario from './pages/Inventario';
 
 function App() {
   const [user, setUser] = useState(null);       // { token, username, rol, id }
@@ -105,7 +109,9 @@ function App() {
   // =========================================================================
   return (
     <div style={{ fontFamily: 'arial', maxWidth: '800px', margin: '0 auto' }}>
-      {/* Barra superior con info del usuario y Logout */}
+    /*
+      {/* Barra superior con info del usuario y Logout */
+      /*
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '15px 0', borderBottom: '1px solid #333', marginBottom: '20px'
@@ -141,7 +147,8 @@ function App() {
         <p> Filtro actual {'->'} Rol: {Rolfiltro} | Item Level: {Ilvfiltro} </p>
       </div>
 
-      {/* Grilla de Raids */}
+      {/* Grilla de Raids */
+      /*
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px', marginTop: '30px' }}>
         {raids
           .filter(raid => {
@@ -184,6 +191,104 @@ function App() {
         }
       </div>
     </div>
+  );
+}
+
+export default App;
+
+
+*/
+
+
+
+
+import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import axios from 'axios';
+
+// Importamos las páginas y componentes
+import Login from './components/Login';
+import Raids from './pages/Raids'; // Aquí llamamos a la vista que ya arreglamos
+import Inventario from './pages/Inventario';
+
+function App() {
+  const [user, setUser] = useState(null); // { token, username, rol, id }
+
+  // =========================================================================
+  // 1. VERIFICAR SESIÓN ACTIVA
+  // =========================================================================
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const username = localStorage.getItem('username');
+    const rol = localStorage.getItem('rol');
+    const userId = localStorage.getItem('userId');
+
+    if (token && username) {
+      setUser({ token, username, rol, id: parseInt(userId) });
+    }
+  }, []);
+
+  // =========================================================================
+  // 2. INTERCEPTOR DE AXIOS (Para enviar el JWT siempre)
+  // =========================================================================
+  useEffect(() => {
+    const interceptor = axios.interceptors.request.use(config => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+
+    return () => {
+      axios.interceptors.request.eject(interceptor);
+    };
+  }, [user]);
+
+  // =========================================================================
+  // 3. FUNCIONES DE LOGIN Y LOGOUT
+  // =========================================================================
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('rol');
+    localStorage.removeItem('userId');
+    setUser(null);
+  };
+
+  // =========================================================================
+  // 4. SISTEMA DE RUTAS (ROUTER)
+  // =========================================================================
+  
+  // Si no está logueado, lo forzamos a ver únicamente la pantalla de Login
+  if (!user) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // Si ESTÁ logueado, le damos acceso a las rutas de la aplicación
+  return (
+    <BrowserRouter>
+      {/* Botón global de Logout (puedes moverlo a tu Navbar luego si prefieres) */}
+      <div style={{ backgroundColor: '#121212', padding: '10px 20px', textAlign: 'right', borderBottom: '1px solid #333' }}>
+        <span style={{ color: '#61dafb', marginRight: '15px', fontWeight: 'bold' }}>👤 {user.username}</span>
+        <button onClick={handleLogout} style={{ padding: '8px 16px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
+          Cerrar Sesión
+        </button>
+      </div>
+
+      <Routes>
+        {/* Rutas principales */}
+        <Route path="/raids" element={<Raids />} />
+        <Route path="/inventario" element={<Inventario />} />
+        
+        {/* Si el usuario entra a la raíz "/" o a una ruta que no existe, lo enviamos a las raids por defecto */}
+        <Route path="*" element={<Navigate to="/raids" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

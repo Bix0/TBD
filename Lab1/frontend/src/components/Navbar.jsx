@@ -1,12 +1,18 @@
 import { Link, useNavigate } from "react-router-dom";
+import React from 'react';
 
 function Navbar() {
   const navigate = useNavigate();
 
   const cerrarSesion = () => {
-    // En el futuro, aquí borraremos el token JWT guardado
-    alert("Cerrando sesión...");
-    navigate('/login'); // Te devuelve a la pantalla de inicio
+    // 1. Destruimos las credenciales reales
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('rol');
+    localStorage.removeItem('userId');
+    
+    // 2. Forzamos la recarga de la página para que App.jsx nos devuelva al Login
+    window.location.href = '/'; 
   };
 
   return (
@@ -31,9 +37,13 @@ function Navbar() {
           Buscador de Raids
         </Link>
         
-        {/* Este enlace aún no funciona porque no hemos creado Ranking.jsx, pero lo dejamos listo */}
         <Link to="/ranking" style={{ color: '#aaa', textDecoration: 'none', fontSize: '16px', fontWeight: 'bold' }}>
           Ranking DKP
+        </Link>
+
+        {/* Movimos el Inventario ANTES del botón de desconectar */}
+        <Link to="/inventario" style={{ color: '#ff9800', textDecoration: 'none', fontSize: '16px', fontWeight: 'bold' }}>
+          🎒 Mi Inventario
         </Link>
 
         <button 

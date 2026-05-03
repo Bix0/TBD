@@ -1,35 +1,40 @@
-import react from 'react';
+import React from 'react';
 
-const Raidfilterbar = ({Rolfiltro, setRolfiltro, Ilvfiltro, setIlvfiltro}) => {
+// Aquí nos aseguramos de recibir EXACTAMENTE los mismos nombres que mandamos desde Raids.jsx
+function RaidFilterBar({ rolFiltro, setRolFiltro, ilvlFiltro, setIlvlFiltro }) {
+  return (
+    <div style={{ display: 'flex', gap: '20px', alignItems: 'center', backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #333' }}>
+      
+      {/* Filtro por Rol */}
+      <div>
+        <label style={{ marginRight: '10px', color: '#aaa', fontWeight: 'bold' }}>Selecciona un rol:</label>
+        <select 
+          value={rolFiltro} 
+          onChange={(e) => setRolFiltro(e.target.value)} 
+          style={{ padding: '8px', borderRadius: '4px', backgroundColor: '#242424', color: 'white', border: '1px solid #555', cursor: 'pointer' }}
+        >
+          <option value="Todos">Todos</option>
+          <option value="Tanque">Tanque</option>
+          <option value="Healer">Healer</option>
+          <option value="DPS">DPS</option>
+        </select>
+      </div>
 
-    return (
-        <div style={{ padding: '1rem', borderBottom: '2px solid #333', marginBottom: '20px' }}> 
-            <h2> Buscador de Raids </h2>
+      {/* Filtro por Item Level (Cambiado a input numérico) */}
+      <div>
+        <label style={{ marginRight: '10px', color: '#aaa', fontWeight: 'bold' }}>Item level mínimo:</label>
+        <input 
+          type="number" 
+          min="0"
+          max="500"
+          value={ilvlFiltro} 
+          onChange={(e) => setIlvlFiltro(Number(e.target.value))} 
+          style={{ padding: '8px', borderRadius: '4px', backgroundColor: '#242424', color: 'white', border: '1px solid #555', width: '80px' }}
+        />
+      </div>
 
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                <div>
-                    <label> Selecciona un rol: </label>
-                    <select value={Rolfiltro} onChange={(e) => setRolfiltro(e.target.value)}>
-                        <option value=""> Todos </option>
-                        <option value="DPS"> DPS </option>
-                        <option value="Tank"> Tank </option>
-                        <option value="Healer"> Healer </option>
-                    </select>
-                </div>
-
-                <div>
-                    <label> Item level minimo: {Ilvfiltro} </label>
-                    <input 
-                    type="range"
-                    min="0"
-                    max="200"
-                    value={Ilvfiltro}
-                    onChange={(e) => setIlvfiltro(e.target.value)}
-                    />
-                </div> 
-            </div>
-        </div>
-    );
+    </div>
+  );
 }
 
-export default Raidfilterbar;
+export default RaidFilterBar;
