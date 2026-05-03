@@ -243,27 +243,7 @@ ORDER BY total_raids_asistidas DESC, dkp_actual DESC;
 -- REFRESH MATERIALIZED VIEW mv_ranking_clan;
 
 -- ==============================================================================
--- 7. DATOS DE PRUEBA (Dummy Data para el Frontend)
+-- 7. NOTA: Los datos de prueba (Jugadores, Clan, Personajes, Raids)
+--    se insertan desde Java (DataSeeder.java) para que las contraseñas
+--    se hasheen con BCrypt antes de guardarse.
 -- ==============================================================================
-
--- 1. Crear un par de jugadores de prueba
-INSERT INTO Jugador (username, password, rol) VALUES
-                                                  ('bruno', '123456', 'Admin'),
-                                                  ('xhuala', '123456', 'Usuario');
-
--- 2. Crear un clan
-INSERT INTO Clan (nombre, id_lider) VALUES
-    ('Los Cruzados', 1);
-
--- 3. Crear personajes (El ID 1 es vital para que tu botón de React funcione)
-INSERT INTO Personaje (id_jugador, id_clan, nombre, clase, nivel, faccion, item_level, puntos_merito, rol_clan) VALUES
-                                                                                                                    (1, 1, 'Thorin', 'Guerrero', 80, 'Alianza', 210, 500, 'Raider'),
-                                                                                                                    (2, 1, 'Elara', 'Mago', 80, 'Alianza', 190, 300, 'Raider');
-
--- 4. Las Raids para tu Buscador
-INSERT INTO Raid (nombre, fecha, estado, item_level_requerido, cupos_tanque, cupos_healer, cupos_dps) VALUES
-                                                                                                          ('La Caída del Rey Exánime', '2026-05-10 20:00:00', 'Programada', 200, 2, 4, 14),
-                                                                                                          ('Guarida de Onyxia', '2026-05-12 19:30:00', 'Programada', 150, 1, 2, 7),
-                                                                                                          ('Núcleo de Magma', '2026-05-15 21:00:00', 'En Curso', 180, 0, 5, 13),
-                                                                                                          ('Templo Oscuro', '2026-05-20 18:00:00', 'Programada', 210, 2, 0, 10),
-                                                                                                          ('Ulduar', '2026-05-25 21:30:00', 'Completada', 220, 2, 5, 18);
