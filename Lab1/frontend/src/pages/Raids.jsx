@@ -22,20 +22,42 @@ function Raids() {
   }, []); // Los corchetes vacíos indican que solo se ejecuta una vez al cargar la página
 
   // 2. FUNCIÓN PARA ENVIAR LA SOLICITUD AL BACKEND
-  const manejarInscripcion = (idRaid) => {
-    // Nota: Por ahora "quemamos" el ID del personaje 1. 
-    // Más adelante, este ID lo sacaremos del JWT del usuario logueado.
-    const idPersonajeTemporal = 1; 
+  const manejarInscripcion = (idRaid, estadoRaid) => {
+    //evitar inscripcion si la raid ya está cerrada
+    if (estadoRaid !== 'Programada') {
+      alert("No puedes unirte a esta raid, esta raid ya está " + estadoRaid.toLowerCase() + ".");
+      return;
+    }
 
-    axios.post(`http://localhost:8080/api/raids/${idRaid}/inscribir?idPersonaje=${idPersonajeTemporal}`)
+    // 2. Adiós al ID quemado. Obtenemos el ID real y el Token del almacenamiento
+    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('token');
+
+    if (!userId || !token) {
+      alert("Error: No estás logueado o tu sesión caducó.");
+      return;
+    }
+
+    // 3. Preparamos el encabezado de seguridad
+    const configSeguridad = {
+      headers: { Authorization: `Bearer ${token}` }
+    };
+
+    // 4. Enviamos la petición dinámica al backend
+    // OJO: Usamos null como cuerpo de la petición (body) porque los datos van en la URL y el header
+    axios.post(`http://localhost:8080/api/raids/${idRaid}/inscribir?idPersonaje=${userId}`, null, configSeguridad)
       .then(response => {
-        alert("¡Inscripción exitosa! Estás en la Raid.");
+        alert("¡Inscripción exitosa! Estás en la Raid. Ve a afilar tus armas.");
+        // (Opcional) Aquí podríamos volver a cargar las raids para ver cómo bajan los cupos
       })
       .catch(error => {
-        // Si el Trigger de PostgreSQL bloquea la acción, Spring Boot devolverá un BadRequest (400)
-        alert("Error: " + (error.response?.data || "No tienes el Item Level requerido o la raid no existe."));
+        // Si PostgreSQL o Spring Boot te rechazan (ej. por Item Level), mostramos el motivo exacto
+        alert("Error de inscripción: " + (error.response?.data || "No tienes el Item Level requerido o no hay cupos."));
       });
   };
+    
+
+    
 
   return (
     <div style={{ backgroundColor: '#121212', minHeight: '100vh', color: 'white' }}>
@@ -106,7 +128,7 @@ function Raids() {
 
               <button 
                 style={{ width: '100%', marginTop: '15px', padding: '10px', cursor: 'pointer', backgroundColor: '#61dafb', color: '#000', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}
-                onClick={() => manejarInscripcion(raid.id_raid)}
+                onClick={() => manejarInscripcion(raid.id_raid, raid.estado)} // Enviamos el ID real de la raid y su estado actual
               >
                 Solicitar Ingreso
               </button>
