@@ -17,20 +17,21 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/raids")
 public class RaidController {
-    
+
     private final RaidService raidService;
-    
+
     public RaidController(RaidService raidService) {
         this.raidService = raidService;
     }
-    
+
     // ============================================================================
     // CRUD BÁSICOS
     // ============================================================================
-    
+
     /**
      * Crea una nueva raid
      * POST /api/raids
+     * 
      * @param raid Objeto Raid con los datos
      * @return ResponseEntity con la raid creada
      */
@@ -43,16 +44,17 @@ public class RaidController {
             return ResponseEntity.badRequest().body(null);
         }
     }
-    
+
     /**
      * Crea una raid con inscripción masiva automática (usa SP)
      * POST /api/raids/con-inscripcion-masiva
-     * @param nombre Nombre de la raid
-     * @param fecha Fecha de la raid
+     * 
+     * @param nombre    Nombre de la raid
+     * @param fecha     Fecha de la raid
      * @param itemLevel Item level requerido
-     * @param tanques Cantidad de cupos para tanques
-     * @param heals Cantidad de cupos para heals
-     * @param dps Cantidad de cupos para DPS
+     * @param tanques   Cantidad de cupos para tanques
+     * @param heals     Cantidad de cupos para heals
+     * @param dps       Cantidad de cupos para DPS
      * @return ResponseEntity con el ID de la raid creada
      */
     @PostMapping("/con-inscripcion-masiva")
@@ -66,20 +68,22 @@ public class RaidController {
         Long idRaid = raidService.crearRaidConInscripcionMasiva(nombre, fecha, itemLevel, tanques, heals, dps);
         return ResponseEntity.status(HttpStatus.CREATED).body(idRaid);
     }
-    
+
     /**
      * Obtiene todas las raids
      * GET /api/raids
+     * 
      * @return Lista de raids
      */
     @GetMapping
     public List<Raid> obtenerTodasLasRaids() {
         return raidService.obtenerTodasLasRaids();
     }
-    
+
     /**
      * Obtiene una raid por su ID
      * GET /api/raids/{id}
+     * 
      * @param id ID de la raid
      * @return ResponseEntity con la raid o 404
      */
@@ -89,11 +93,12 @@ public class RaidController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    
+
     /**
      * Actualiza una raid existente
      * PUT /api/raids/{id}
-     * @param id ID de la raid
+     * 
+     * @param id   ID de la raid
      * @param raid Objeto Raid con los datos actualizados
      * @return ResponseEntity con la raid actualizada o 404
      */
@@ -107,11 +112,12 @@ public class RaidController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     /**
      * Cambia el estado de una raid
      * PUT /api/raids/{id}/estado
-     * @param id ID de la raid
+     * 
+     * @param id     ID de la raid
      * @param estado Nuevo estado
      * @return ResponseEntity con status 200 o 404
      */
@@ -124,10 +130,11 @@ public class RaidController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     /**
      * Elimina una raid por su ID
      * DELETE /api/raids/{id}
+     * 
      * @param id ID de la raid
      * @return ResponseEntity con status 204 o 404
      */
@@ -140,14 +147,15 @@ public class RaidController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     // ============================================================================
     // MÉTODOS ESPECÍFICOS
     // ============================================================================
-    
+
     /**
      * Obtiene raids por estado
      * GET /api/raids/estado/{estado}
+     * 
      * @param estado Estado de la raid
      * @return Lista de raids con ese estado
      */
@@ -155,39 +163,42 @@ public class RaidController {
     public List<Raid> obtenerPorEstado(@PathVariable String estado) {
         return raidService.obtenerPorEstado(estado);
     }
-    
+
     /**
      * Obtiene raids programadas
      * GET /api/raids/programadas
+     * 
      * @return Lista de raids programadas
      */
     @GetMapping("/programadas")
     public List<Raid> obtenerRaidsProgramadas() {
         return raidService.obtenerRaidsProgramadas();
     }
-    
+
     /**
      * Inscribe un personaje a una raid
      * POST /api/raids/{id}/inscribir
-     * @param id ID de la raid
+     * 
+     * @param id          ID de la raid
      * @param idPersonaje ID del personaje
      * @return ResponseEntity con status 200 o 404
-     * Este endpoint activa el trigger trg_validar_ilvl
+     *         Este endpoint activa el trigger trg_validar_ilvl
      */
     @PostMapping("/{id}/inscribir")
-    public ResponseEntity<Void> inscribirPersonaje(@PathVariable Long id, @RequestParam Long idPersonaje) {
+    public ResponseEntity<String> inscribirPersonaje(@PathVariable Long id, @RequestParam Long idPersonaje) {
         try {
             raidService.inscribirPersonaje(id, idPersonaje);
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok("Inscripción exitosa");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
+
     /**
      * Desinscribe un personaje de una raid
      * POST /api/raids/{id}/desinscribir
-     * @param id ID de la raid
+     * 
+     * @param id          ID de la raid
      * @param idPersonaje ID del personaje
      * @return ResponseEntity con status 200 o 404
      */
@@ -200,10 +211,11 @@ public class RaidController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     /**
      * Obtiene las inscripciones de una raid
      * GET /api/raids/{id}/inscripciones
+     * 
      * @param id ID de la raid
      * @return Lista de inscripciones
      */
@@ -211,10 +223,11 @@ public class RaidController {
     public List<Object[]> obtenerInscripcionesRaid(@PathVariable Long id) {
         return raidService.obtenerInscripcionesRaid(id);
     }
-    
+
     /**
      * Cuenta las inscripciones por estado
      * GET /api/raids/{id}/inscripciones-conteo
+     * 
      * @param id ID de la raid
      * @return Lista de arrays [estado, count]
      */

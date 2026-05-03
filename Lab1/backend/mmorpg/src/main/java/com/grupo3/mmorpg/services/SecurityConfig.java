@@ -2,6 +2,7 @@ package com.grupo3.mmorpg.services;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -52,11 +53,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Rutas públicas (no requieren token)
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/raids").permitAll() // Ver raids es público
-                        // Rutas solo para Admin
-                        .requestMatchers("/api/items/**").hasRole("ADMIN")
-                        .requestMatchers("/api/raids/**").hasRole("ADMIN") // Crear raids solo Admin
+                        .requestMatchers(HttpMethod.GET, "/api/raids").permitAll() // Listar raids público
+                        .requestMatchers(HttpMethod.GET, "/api/raids/**").permitAll() // Ver raid individual público
+                        // Rutas solo para Admin (creación/modificación de datos)
+                        .requestMatchers(HttpMethod.POST, "/api/items/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/raids").hasRole("ADMIN") // Crear raid
+                        .requestMatchers(HttpMethod.PUT, "/api/raids/**").hasRole("ADMIN") // Editar raid
+                        .requestMatchers(HttpMethod.DELETE, "/api/raids/**").hasRole("ADMIN") // Eliminar raid
                         .requestMatchers("/api/clanes/*/lider").hasRole("ADMIN")
+                        // Cualquier usuario autenticado puede inscribirse/desinscribirse de raids
+                        .requestMatchers(HttpMethod.POST, "/api/raids/*/inscribir").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/raids/*/desinscribir").authenticated()
                         // Rutas para cualquier usuario autenticado
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
