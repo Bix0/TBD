@@ -211,6 +211,7 @@ import Login from './components/Login';
 import Raids from './pages/Raids'; // Aquí llamamos a la vista que ya arreglamos
 import Inventario from './pages/Inventario';
 import Ranking from './pages/Ranking';
+import PanelAdmin from './pages/PanelAdmin';
 
 function App() {
   const [user, setUser] = useState(null); // { token, username, rol, id }
@@ -286,6 +287,7 @@ function App() {
         <Route path="/raids" element={<Raids />} />
         <Route path="/inventario" element={<Inventario />} />
         <Route path="/ranking" element={<Ranking/>} />
+        <Route path="/admin" element={<PanelAdmin />} />
         
         {/* Si el usuario entra a la raíz "/" o a una ruta que no existe, lo enviamos a las raids por defecto */}
         <Route path="*" element={<Navigate to="/raids" replace />} />

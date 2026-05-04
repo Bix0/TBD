@@ -9,7 +9,7 @@ function Raids() {
   const [raids, setRaids] = useState([]); // Ahora inicia vacío
 
   // 1. CARGAR DATOS DESDE SPRING BOOT AL INICIAR
-  useEffect(() => {
+  const cargarRaids = () => {
     // Asumiendo que tu Spring Boot corre en el puerto 8080
     axios.get('http://localhost:8080/api/raids')
       .then(response => {
@@ -19,7 +19,11 @@ function Raids() {
       .catch(error => {
         console.error("Error conectando al backend:", error);
       });
-  }, []); // Los corchetes vacíos indican que solo se ejecuta una vez al cargar la página
+  }; // Los corchetes vacíos indican que solo se ejecuta una vez al cargar la página
+
+  useEffect(() => {
+    cargarRaids();
+  }, []); // El arreglo vacío asegura que solo se ejecute una vez al montar el componente
 
   // 2. FUNCIÓN PARA ENVIAR LA SOLICITUD AL BACKEND
   const manejarInscripcion = (idRaid, estadoRaid) => {
@@ -49,6 +53,7 @@ function Raids() {
       .then(response => {
         alert("¡Inscripción exitosa! Estás en la Raid. Ve a afilar tus armas.");
         // (Opcional) Aquí podríamos volver a cargar las raids para ver cómo bajan los cupos
+        cargarRaids();
       })
       .catch(error => {
         // Si PostgreSQL o Spring Boot te rechazan (ej. por Item Level), mostramos el motivo exacto

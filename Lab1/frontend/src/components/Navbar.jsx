@@ -15,6 +15,8 @@ function Navbar() {
     window.location.href = '/'; 
   };
 
+  const rol = localStorage.getItem('rol');
+
   return (
     <nav style={{
       backgroundColor: '#1e1e1e',
@@ -45,6 +47,13 @@ function Navbar() {
         <Link to="/inventario" style={{ color: '#ff9800', textDecoration: 'none', fontSize: '16px', fontWeight: 'bold' }}>
           🎒 Mi Inventario
         </Link>
+
+        {/* Renderizado Condicional: Solo se dibuja si el rol es 'Admin' */}
+        {rol === 'Admin' && (
+          <Link to="/admin" style={{ color: '#f44336', textDecoration: 'none', fontSize: '16px', fontWeight: 'bold' }}>
+            ⚙️ Panel Admin
+          </Link>
+        )}
 
         <button 
           onClick={cerrarSesion}
