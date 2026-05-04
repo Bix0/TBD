@@ -57,15 +57,13 @@ public class RaidRepository {
             raid.getCupos_dps()
         );
     }
-    
+
     /**
      * Busca una raid por su ID
      * SELECT * FROM Raid WHERE id_raid = ?
      */
     public Optional<Raid> findById(Long id) {
-        String sql = "SELECT * FROM Raid WHERE id_raid = ?";
-        List<Raid> result = jdbcTemplate.query(sql, new Object[]{id}, RAID_ROW_MAPPER);
-        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+        return null;
     }
     
     /**
@@ -209,5 +207,24 @@ public class RaidRepository {
         String sql = "SELECT estado, COUNT(*) FROM Inscripcion_Raid WHERE id_raid = ? GROUP BY estado";
         return jdbcTemplate.query(sql, new Object[]{idRaid},
             (rs, rowNum) -> new Object[]{rs.getString("estado"), rs.getInt("COUNT(*)")});
+    }
+
+    /**
+     * Guarda los cupos por clase modificados de la raid
+     * "UPDATE Raid SET cupos_tanque = ?, cupos_healer = ?, cupos_dps = ? WHERE id_raid = ?"
+     */
+    public void saveCupos(Raid raid) {
+        String sql = "UPDATE Raid SET cupos_tanque = ?, cupos_healer = ?, cupos_dps = ? WHERE id_raid = ?";
+
+        int filasAfectadas = jdbcTemplate.update(sql,
+                raid.getCupos_tanque(),
+                raid.getCupos_healer(),
+                raid.getCupos_dps(),
+                raid.getId_raid()
+        );
+
+        if (filasAfectadas == 0) {
+            throw new RuntimeException("No se pudo actualizar la Raid. ID no encontrado.");
+        }
     }
 }

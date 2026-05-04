@@ -1,6 +1,8 @@
 package com.grupo3.mmorpg.services;
 
+import com.grupo3.mmorpg.models.Personaje;
 import com.grupo3.mmorpg.models.Raid;
+import com.grupo3.mmorpg.repositories.PersonajeRepository;
 import com.grupo3.mmorpg.repositories.RaidRepository;
 import org.springframework.stereotype.Service;
 
@@ -17,10 +19,13 @@ import java.util.Optional;
 public class RaidService {
     
     private final RaidRepository raidRepository;
-    
-    public RaidService(RaidRepository raidRepository) {
+    private final PersonajeRepository personajeRepository;
+
+    public RaidService(RaidRepository raidRepository, PersonajeRepository personajeRepository) {
         this.raidRepository = raidRepository;
+        this.personajeRepository = personajeRepository;
     }
+
     
     // ============================================================================
     // CRUD BÁSICOS
@@ -128,8 +133,46 @@ public class RaidService {
      * @return Número de filas afectadas
      * Este INSERT activa el trigger trg_validar_ilvl
      */
-    public int inscribirPersonaje(Long idRaid, Long idPersonaje) {
-        return raidRepository.inscribirPersonaje(idRaid, idPersonaje);
+    public String inscribirPersonaje(Long idRaid, Long idPersonaje) {
+        Raid raid = raidRepository.findById(idRaid)
+                .orElseThrow(() -> new RuntimeException("La Raid no existe"));
+
+        Personaje personaje = personajeRepository
+                .findById(idPersonaje)
+                .orElseThrow(() -> new RuntimeException("Personaje no encontrado"));
+
+        if (personaje.getItem_level() < raid.getItem_level_requerido()) {
+            return "Nivel de objeto insuficiente.";
+        }
+            String rol = personaje.getRol_clan().toUpperCase();
+            if (rol.equals("TANQUE")) {
+                if (raid.getCupos_tanque() > 0) {
+                    raid.setCupos_tanque(raid.getCupos_tanque() - 1);
+                } else {
+                    return "No quedan cupos para Tanques.";
+                }
+            }
+            else if (rol.equals("HEALER")) {
+                if (raid.getCupos_healer() > 0) {
+                    raid.setCupos_healer(raid.getCupos_healer() - 1);
+                } else {
+                    return "No quedan cupos para Healers.";
+                }
+            }
+            else if (rol.equals("DPS")) {
+                if (raid.getCupos_dps() > 0) {
+                    raid.setCupos_dps(raid.getCupos_dps() - 1);
+                } else {
+                    return "No quedan cupos para DPS.";
+                }
+            }
+            else {
+                return "Rol no reconocido.";
+            }
+        raidRepository.saveCupos(raid); // Actualiza el cupo en la clase determinada
+        raidRepository.inscribirPersonaje(idRaid, idPersonaje); //Inscribe el personaje a la raid
+
+        return "Inscripción exitosa.";
     }
     
     /**
