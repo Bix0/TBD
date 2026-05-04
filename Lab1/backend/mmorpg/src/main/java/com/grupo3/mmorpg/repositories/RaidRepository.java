@@ -63,7 +63,9 @@ public class RaidRepository {
      * SELECT * FROM Raid WHERE id_raid = ?
      */
     public Optional<Raid> findById(Long id) {
-        return null;
+        String sql = "SELECT * FROM Raid WHERE id_raid = ?";
+        List<Raid> result = jdbcTemplate.query(sql, RAID_ROW_MAPPER, id);
+        return result.stream().findFirst();
     }
     
     /**
@@ -74,7 +76,7 @@ public class RaidRepository {
         String sql = "SELECT * FROM Raid ORDER BY fecha DESC";
         return jdbcTemplate.query(sql, RAID_ROW_MAPPER);
     }
-    
+
     /**
      * Actualiza una raid existente
      * UPDATE Raid SET nombre = ?, fecha = ?, estado = ?, item_level_requerido = ?, cupos_tanque = ?, cupos_healer = ?, cupos_dps = ? WHERE id_raid = ?
