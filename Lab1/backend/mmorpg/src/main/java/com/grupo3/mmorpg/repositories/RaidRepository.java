@@ -200,7 +200,17 @@ public class RaidRepository {
                 rs.getBoolean("asistio")
             });
     }
-    
+
+    /**
+     * Revisa si un personaje esta inscrito en una raid especifica o no
+     * "SELECT COUNT(*) FROM Inscripcion_Raid WHERE id_raid = ? AND id_personaje = ?";
+     */
+    public boolean estaPersonajeInscrito(Long idRaid, Long idPersonaje) {
+        String sql = "SELECT COUNT(*) FROM Inscripcion_Raid WHERE id_raid = ? AND id_personaje = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, idRaid, idPersonaje);
+        return count != null && count > 0;
+    }
+
     /**
      * Cuenta las inscripciones por estado para una raid
      * SELECT estado, COUNT(*) FROM Inscripcion_Raid WHERE id_raid = ? GROUP BY estado

@@ -130,12 +130,21 @@ public class RaidService {
      * Inscribe un personaje a una raid
      * @param idRaid ID de la raid
      * @param idPersonaje ID del personaje
-     * @return Número de filas afectadas
-     * Este INSERT activa el trigger trg_validar_ilvl
+     * @return String de mensaje de inscripcion del personaje
      */
     public String inscribirPersonaje(Long idRaid, Long idPersonaje) {
         Raid raid = raidRepository.findById(idRaid)
                 .orElseThrow(() -> new RuntimeException("La Raid no existe"));
+
+        //Verificar si personaje ya está dentro
+        if (raidRepository.estaPersonajeInscrito(idRaid, idPersonaje)) {
+            return "Ya estás inscrito en esta Raid.";
+        }
+
+        //Verifica que ningun personaje se inscriba a la raid salvo que este en el estado "Programada"
+        if (!raid.getEstado().equalsIgnoreCase("Programada")) {
+            return "No puedes modificar inscripciones en una raid que ya comenzó o terminó.";
+        }
 
         Personaje personaje = personajeRepository
                 .findById(idPersonaje)
@@ -179,11 +188,21 @@ public class RaidService {
      * Desinscribe un personaje de una raid
      * @param idRaid ID de la raid
      * @param idPersonaje ID del personaje
-     * @return Número de filas afectadas
+     * @return String de mensaje desinscripcion del personaje
      */
     public String desinscribirPersonaje(Long idRaid, Long idPersonaje) {
         Raid raid = raidRepository.findById(idRaid)
                 .orElseThrow(() -> new RuntimeException("La Raid no existe"));
+
+        //Verificar si personaje ya está dentro de la raid
+        if (!raidRepository.estaPersonajeInscrito(idRaid, idPersonaje)) {
+            return "No estas inscrito en esta raid";
+        }
+
+        //Verifica que ningun personaje se desinscriba de la raid salvo que este en el estado "Programada"
+        if (!raid.getEstado().equalsIgnoreCase("Programada")) {
+            return "No puedes modificar inscripciones en una raid que ya comenzó o terminó.";
+        }
 
         Personaje personaje = personajeRepository
                 .findById(idPersonaje)
