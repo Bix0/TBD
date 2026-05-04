@@ -181,8 +181,29 @@ public class RaidService {
      * @param idPersonaje ID del personaje
      * @return Número de filas afectadas
      */
-    public int desinscribirPersonaje(Long idRaid, Long idPersonaje) {
-        return raidRepository.desinscribirPersonaje(idRaid, idPersonaje);
+    public String desinscribirPersonaje(Long idRaid, Long idPersonaje) {
+        Raid raid = raidRepository.findById(idRaid)
+                .orElseThrow(() -> new RuntimeException("La Raid no existe"));
+
+        Personaje personaje = personajeRepository
+                .findById(idPersonaje)
+                .orElseThrow(() -> new RuntimeException("Personaje no encontrado"));
+
+        String rol = personaje.getRol_clan().toUpperCase();
+        if (rol.equals("TANQUE")) {
+            raid.setCupos_tanque(raid.getCupos_tanque() + 1);
+        }
+        else if (rol.equals("HEALER")) {
+            raid.setCupos_healer(raid.getCupos_healer() + 1);
+        }
+        else if (rol.equals("DPS")) {
+            raid.setCupos_dps(raid.getCupos_dps() + 1);
+        }
+
+        raidRepository.saveCupos(raid); // Actualiza el cupo
+        raidRepository.desinscribirPersonaje(idRaid, idPersonaje); //Desinscribe el personaje de la raid
+
+        return "Desincripción exitosa.";
     }
     
     /**
