@@ -1,8 +1,38 @@
 import { Link, useNavigate } from "react-router-dom";
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import CrearPersonajeModal from './CrearPersonajeModal';
 
 function Navbar() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [hasPersonajes, setHasPersonajes] = useState(false);
   const navigate = useNavigate();
+
+  const userId = localStorage.getItem('userId');
+
+  const checkPersonajes = () => {
+    if (userId) {
+      const token = localStorage.getItem('token');
+      axios.get(`http://localhost:8080/api/personajes/jugador/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(response => {
+          // Ahora el backend devuelve una lista (200 OK) o nada (204 No Content)
+          if (response.status === 200 && Array.isArray(response.data) && response.data.length > 0) {
+            setHasPersonajes(true);
+          } else {
+            setHasPersonajes(false);
+          }
+        })
+        .catch(error => {
+          console.error("Error al verificar personajes:", error);
+        });
+    }
+  };
+
+  useEffect(() => {
+    checkPersonajes();
+  }, [userId]);
 
   const cerrarSesion = () => {
     // 1. Destruimos las credenciales reales
@@ -10,9 +40,9 @@ function Navbar() {
     localStorage.removeItem('username');
     localStorage.removeItem('rol');
     localStorage.removeItem('userId');
-    
+
     // 2. Forzamos la recarga de la página para que App.jsx nos devuelva al Login
-    window.location.href = '/'; 
+    window.location.href = '/';
   };
 
   const rol = localStorage.getItem('rol');
@@ -35,10 +65,36 @@ function Navbar() {
 
       {/* Botones de navegación a la derecha */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          style={{
+            backgroundColor: '#4caf50',
+            color: '#fff',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+          }}
+        >
+          ➕ Crear Personaje
+        </button>
+
+        {hasPersonajes && (
+          <>
+            <Link to="/mis-personajes" style={{ color: '#4caf50', textDecoration: 'none', fontSize: '16px', fontWeight: 'bold' }}>
+              🤡 Mis Personajes
+            </Link>
+            <Link to="/mi-clan" style={{ color: '#e91e63', textDecoration: 'none', fontSize: '16px', fontWeight: 'bold' }}>
+              🏰 Mi Clan
+            </Link>
+          </>
+        )}
+
         <Link to="/raids" style={{ color: '#aaa', textDecoration: 'none', fontSize: '16px', fontWeight: 'bold' }}>
           Buscador de Raids
         </Link>
-        
+
         <Link to="/ranking" style={{ color: '#aaa', textDecoration: 'none', fontSize: '16px', fontWeight: 'bold' }}>
           Ranking DKP
         </Link>
@@ -55,15 +111,15 @@ function Navbar() {
           </Link>
         )}
 
-        <button 
+        <button
           onClick={cerrarSesion}
           style={{
-            backgroundColor: '#ff4d4d', 
-            color: '#fff', 
-            border: 'none', 
-            padding: '8px 16px', 
-            borderRadius: '5px', 
-            cursor: 'pointer', 
+            backgroundColor: '#ff4d4d',
+            color: '#fff',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '5px',
+            cursor: 'pointer',
             fontWeight: 'bold',
             marginLeft: '15px'
           }}
@@ -71,6 +127,8 @@ function Navbar() {
           Desconectar
         </button>
       </div>
+
+      <CrearPersonajeModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); checkPersonajes(); }} />
     </nav>
   );
 }

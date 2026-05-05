@@ -162,9 +162,8 @@ public class PersonajeRepository {
      * Obtiene el personaje de un jugador específico
      * SELECT * FROM Personaje WHERE id_jugador = ? ORDER BY id_personaje LIMIT 1
      */
-    public Optional<Personaje> findByJugadorId(Long jugadorId) {
-        String sql = "SELECT * FROM Personaje WHERE id_jugador = ? ORDER BY id_personaje LIMIT 1";
-        List<Personaje> result = jdbcTemplate.query(sql, new Object[]{jugadorId}, PERSONAJE_ROW_MAPPER);
-        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+    public List<Personaje> findByJugadorId(Long jugadorId) {
+        String sql = "SELECT * FROM Personaje WHERE id_jugador = ? ORDER BY id_personaje";
+        return jdbcTemplate.query(sql, new Object[]{jugadorId}, PERSONAJE_ROW_MAPPER);
     }
 }

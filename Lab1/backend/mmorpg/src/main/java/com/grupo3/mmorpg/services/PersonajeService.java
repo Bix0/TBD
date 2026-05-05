@@ -126,7 +126,7 @@ public class PersonajeService {
      * @param jugadorId ID del jugador
      * @return Optional con el personaje si existe
      */
-    public Optional<Personaje> obtenerPorJugadorId(Long jugadorId) {
+    public List<Personaje> obtenerPorJugadorId(Long jugadorId) {
         return personajeRepository.findByJugadorId(jugadorId);
     }
 }

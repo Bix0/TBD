@@ -5,8 +5,9 @@ import Navbar from '../components/Navbar';
 function Ranking() {
   const [personajes, setPersonajes] = useState([]);
   
-  // 1. Obtenemos TU ID de usuario para saber quién eres en la tabla
-  const miUserId = parseInt(localStorage.getItem('userId'));
+  // 1. Ya no usamos el ID de usuario general, porque un usuario puede tener varios personajes.
+  // Ahora usamos la variable del personaje seleccionado como Activo.
+  const miUserId = parseInt(localStorage.getItem('userId')); // Lo dejamos por si acaso, pero no lo usaremos para el resaltado
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -27,8 +28,9 @@ function Ranking() {
   }, []);
 
   // 2. Buscamos en qué posición del arreglo (índice) quedaste después de ordenar
+  const activePersonajeId = parseInt(localStorage.getItem('activePersonajeId'));
   const miIndice = personajes.findIndex(p => 
-    p.id_jugador === miUserId || p.idJugador === miUserId || p.jugador?.id === miUserId
+    p.id_personaje === activePersonajeId || p.idPersonaje === activePersonajeId
   );
   // Si te encontramos (índice distinto a -1), tu posición real es el índice + 1
   const miPosicionActual = miIndice !== -1 ? miIndice + 1 : null;
@@ -36,7 +38,7 @@ function Ranking() {
   return (
     <div style={{ backgroundColor: '#121212', minHeight: '100vh', color: 'white' }}>
       <Navbar />
-      <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ padding: '20px', width: '95%', maxWidth: '1400px', margin: '0 auto' }}>
         <h1 style={{ textAlign: 'center', color: '#61dafb', marginBottom: '10px' }}>
           🏆 Ranking DKP del Clan
         </h1>
@@ -66,8 +68,9 @@ function Ranking() {
               const clase = personaje.clase;
               const puntos = personaje.puntos_merito || personaje.puntosMerito || 0;
               
-              // 4. Verificamos si esta fila que se está dibujando es la tuya
-              const esMiPersonaje = (personaje.id_jugador === miUserId || personaje.idJugador === miUserId || personaje.jugador?.id === miUserId);
+              // 4. Verificamos si esta fila que se está dibujando es la de tu personaje ACTIVO
+              const pjId = personaje.id_personaje || personaje.idPersonaje;
+              const esMiPersonaje = activePersonajeId && (pjId === activePersonajeId);
               
               let colorPosicion = '#aaa';
               if (index === 0) colorPosicion = '#ffd700'; // Oro

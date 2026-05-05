@@ -157,4 +157,30 @@ public class ClanController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    /**
+     * Une a un personaje al clan
+     * POST /api/clanes/{id}/miembros?idPersonaje={idPersonaje}
+     */
+    @PostMapping("/{id}/miembros")
+    public ResponseEntity<String> unirseAClan(@PathVariable Long id, @RequestParam Long idPersonaje) {
+        String resultado = clanService.unirseAClan(id, idPersonaje);
+        if (resultado.contains("ya pertenece") || resultado.contains("no existe")) {
+            return ResponseEntity.badRequest().body(resultado);
+        }
+        return ResponseEntity.ok(resultado);
+    }
+
+    /**
+     * Expulsa o permite que un miembro salga del clan
+     * DELETE /api/clanes/{id}/miembros/{idPersonaje}
+     */
+    @DeleteMapping("/{id}/miembros/{idPersonaje}")
+    public ResponseEntity<String> abandonarClan(@PathVariable Long id, @PathVariable Long idPersonaje) {
+        String resultado = clanService.abandonarClan(id, idPersonaje);
+        if (resultado.startsWith("Error")) {
+            return ResponseEntity.badRequest().body(resultado);
+        }
+        return ResponseEntity.ok(resultado);
+    }
 }

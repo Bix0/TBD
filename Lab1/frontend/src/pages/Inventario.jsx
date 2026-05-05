@@ -5,8 +5,8 @@ import Navbar from '../components/Navbar';
 function Inventario() {
   const [items, setItems] = useState([]);
   
-  // 1. Obtenemos el ID real y el Token directamente del almacenamiento del navegador
-  const userId = localStorage.getItem('userId'); 
+  // 1. Obtenemos el ID del personaje activo y el Token
+  const activePersonajeId = localStorage.getItem('activePersonajeId'); 
   const token = localStorage.getItem('token');
 
   // 2. Preparamos el "Pase VIP" (Header) para que Spring Security no nos bloquee
@@ -15,10 +15,10 @@ function Inventario() {
   };
 
   const cargarInventario = () => {
-    if (!userId || !token) return; // Si no hay usuario, no hacemos la petición
+    if (!activePersonajeId || !token) return; // Si no hay personaje activo, no hacemos la petición
 
-    // 3. Usamos el userId real y le pasamos la configuración de seguridad
-    axios.get(`http://localhost:8080/api/personajes/${userId}/inventario`, configSeguridad)
+    // 3. Usamos el activePersonajeId real y le pasamos la configuración de seguridad
+    axios.get(`http://localhost:8080/api/personajes/${activePersonajeId}/inventario`, configSeguridad)
       .then(response => {
         setItems(response.data);
       })
@@ -33,7 +33,7 @@ function Inventario() {
     const accion = estaEquipado ? 'desequipar' : 'equipar';
     
     // También enviamos el token al intentar equipar/desequipar
-    axios.put(`http://localhost:8080/api/personajes/${userId}/inventario/${idItemInventario}/${accion}`, null, configSeguridad)
+    axios.put(`http://localhost:8080/api/personajes/${activePersonajeId}/inventario/${idItemInventario}/${accion}`, null, configSeguridad)
       .then(() => {
         cargarInventario(); 
       })
@@ -46,13 +46,18 @@ function Inventario() {
   return (
     <div style={{ backgroundColor: '#121212', minHeight: '100vh', color: 'white' }}>
       <Navbar />
-      <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ padding: '20px', width: '95%', maxWidth: '1400px', margin: '0 auto' }}>
         <h1 style={{ textAlign: 'center', color: '#ff9800', marginBottom: '30px' }}>
           🎒 Mi Inventario
         </h1>
         
         <div style={{ display: 'grid', gap: '15px' }}>
-          {items.length === 0 ? (
+          {!activePersonajeId ? (
+            <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#1a1a1a', borderRadius: '8px' }}>
+              <p style={{ color: '#888', fontSize: '18px' }}>No has seleccionado un personaje activo.</p>
+              <p style={{ color: '#555', fontSize: '14px' }}>Ve a la pestaña <strong>Mis Personajes</strong> y marca uno como Activo.</p>
+            </div>
+          ) : items.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#1a1a1a', borderRadius: '8px' }}>
               <p style={{ color: '#888', fontSize: '18px' }}>Tu mochila está vacía.</p>
               <p style={{ color: '#555', fontSize: '14px' }}>¡Participa en Raids para conseguir equipo!</p>

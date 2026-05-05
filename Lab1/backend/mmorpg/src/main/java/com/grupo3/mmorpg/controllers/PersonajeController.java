@@ -171,9 +171,13 @@ public class PersonajeController {
      * @return ResponseEntity con el personaje o 404
      */
     @GetMapping("/jugador/{jugadorId}")
-    public ResponseEntity<Personaje> obtenerPorJugadorId(@PathVariable Long jugadorId) {
-        return personajeService.obtenerPorJugadorId(jugadorId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<List<Personaje>> obtenerPorJugadorId(@PathVariable Long jugadorId) {
+        List<Personaje> personajes = personajeService.obtenerPorJugadorId(jugadorId); 
+            if (personajes.isEmpty()) {
+                // Opción A: Devolver 204 No Content para que el front sepa que esta vacio
+                return ResponseEntity.noContent().build();
+            }
+            // Opción B: Devolver la lista 
+            return ResponseEntity.ok(personajes);
     }
 }

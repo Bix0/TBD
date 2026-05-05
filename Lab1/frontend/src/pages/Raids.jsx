@@ -33,12 +33,12 @@ function Raids() {
       return;
     }
 
-    // 2. Adiós al ID quemado. Obtenemos el ID real y el Token del almacenamiento
-    const userId = localStorage.getItem('userId');
+    // 2. Obtenemos el ID del personaje activo y el Token del almacenamiento
+    const activePersonajeId = localStorage.getItem('activePersonajeId');
     const token = localStorage.getItem('token');
 
-    if (!userId || !token) {
-      alert("Error: No estás logueado o tu sesión caducó.");
+    if (!activePersonajeId || !token) {
+      alert("Error: No has seleccionado un personaje activo o tu sesión caducó. Ve a 'Mis Personajes' y marca uno como Activo.");
       return;
     }
 
@@ -47,9 +47,9 @@ function Raids() {
       headers: { Authorization: `Bearer ${token}` }
     };
 
-    // 4. Enviamos la petición dinámica al backend
+    // 4. Enviamos la petición dinámica al backend con el personaje activo
     // OJO: Usamos null como cuerpo de la petición (body) porque los datos van en la URL y el header
-    axios.post(`http://localhost:8080/api/raids/${idRaid}/inscribir?idPersonaje=${userId}`, null, configSeguridad)
+    axios.post(`http://localhost:8080/api/raids/${idRaid}/inscribir?idPersonaje=${activePersonajeId}`, null, configSeguridad)
       .then(response => {
         alert("¡Inscripción exitosa! Estás en la Raid. Ve a afilar tus armas.");
         // (Opcional) Aquí podríamos volver a cargar las raids para ver cómo bajan los cupos
@@ -71,7 +71,7 @@ function Raids() {
         <h1 style={{ textAlign: 'center', color: '#61dafb', marginBottom: '20px' }}>
           🏰 Buscador de Raids
         </h1>
-        <div style={{ fontFamily: 'arial', maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ fontFamily: 'arial', width: '95%', maxWidth: '1400px', margin: '0 auto' }}>
           <RaidFilterBar
             rolFiltro={Rolfiltro}
             setRolFiltro={setRolfiltro}

@@ -212,6 +212,8 @@ import Raids from './pages/Raids'; // Aquí llamamos a la vista que ya arreglamo
 import Inventario from './pages/Inventario';
 import Ranking from './pages/Ranking';
 import PanelAdmin from './pages/PanelAdmin';
+import MisPersonajes from './pages/MisPersonajes';
+import MiClan from './pages/MiClan';
 
 function App() {
   const [user, setUser] = useState(null); // { token, username, rol, id }
@@ -284,6 +286,8 @@ function App() {
 
       <Routes>
         {/* Rutas principales */}
+        <Route path="/mis-personajes" element={<MisPersonajes />} />
+        <Route path="/mi-clan" element={<MiClan />} />
         <Route path="/raids" element={<Raids />} />
         <Route path="/inventario" element={<Inventario />} />
         <Route path="/ranking" element={<Ranking/>} />
