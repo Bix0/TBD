@@ -124,4 +124,32 @@ public class ClanRepository {
             (rs, rowNum) -> rs.getLong("id_lider"));
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
+
+    /**
+     * Agrega un personaje a un clan asignándole el ID del clan.
+     * UPDATE Personaje SET id_clan = ?, rol_clan = 'Iniciado' WHERE id_personaje = ?
+     */
+    public int añadirMiembro(Long idClan, Long idPersonaje) {
+        String sql = "UPDATE Personaje SET id_clan = ?, rol_clan = 'Iniciado' WHERE id_personaje = ?";
+        return jdbcTemplate.update(sql, idClan, idPersonaje);
+    }
+
+    /**
+     * Elimina a un personaje del clan (pone su id_clan en NULL).
+     * UPDATE Personaje SET id_clan = NULL, rol_clan = NULL WHERE id_personaje = ?
+     */
+    public int eliminarMiembro(Long idPersonaje) {
+        String sql = "UPDATE Personaje SET id_clan = NULL, rol_clan = NULL WHERE id_personaje = ?";
+        return jdbcTemplate.update(sql, idPersonaje);
+    }
+
+    /**
+     * Verifica si un personaje ya tiene clan.
+     * SELECT COUNT(*) FROM Personaje WHERE id_personaje = ? AND id_clan IS NOT NULL
+     */
+    public boolean personajeTieneClan(Long idPersonaje) {
+        String sql = "SELECT COUNT(*) FROM Personaje WHERE id_personaje = ? AND id_clan IS NOT NULL";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, idPersonaje);
+        return count != null && count > 0;
+    }
 }

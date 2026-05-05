@@ -3,6 +3,7 @@ package com.grupo3.mmorpg.services;
 import com.grupo3.mmorpg.models.Clan;
 import com.grupo3.mmorpg.repositories.ClanRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -119,4 +120,44 @@ public class ClanService {
     public Optional<Long> obtenerLiderId(Long idClan) {
         return clanRepository.getLiderId(idClan);
     }
+
+    /**
+     * Une a un personaje al clan con validaciones.
+     * @param idClan ID del clan
+     * @param idPersonaje ID del personaje
+     * @return String de ingreso al clan
+     */
+    @Transactional
+    public String unirseAClan(Long idClan, Long idPersonaje) {
+        if (clanRepository.personajeTieneClan(idPersonaje)) {
+            return "El personaje ya pertenece a un clan.";
+        }
+
+        if (!clanRepository.findById(idClan).isPresent()) {
+            return "El clan no existe.";
+        }
+
+        clanRepository.añadirMiembro(idClan, idPersonaje);
+        return "Te has unido al clan exitosamente.";
+    }
+
+    /**
+     * Expulsa o permite que un miembro salga del clan.
+     * Si es el líder, debe dar error.
+     * @param idClan ID del clan
+     * @param idPersonaje ID del personaje
+     * @return String de abandono del clan
+     */
+    @Transactional
+    public String abandonarClan(Long idClan, Long idPersonaje) {
+        Optional<Long> liderId = clanRepository.getLiderId(idClan);
+
+        if (liderId.isPresent() && liderId.get().equals(idPersonaje)) {
+            return "Error: El líder no puede abandonar el clan. Debe transferir el liderazgo primero.";
+        }
+
+        clanRepository.eliminarMiembro(idPersonaje);
+        return "Has abandonado el clan.";
+    }
 }
+
