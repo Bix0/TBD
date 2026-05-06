@@ -3,7 +3,6 @@ package com.grupo3.mmorpg.services;
 import com.grupo3.mmorpg.models.Clan;
 import com.grupo3.mmorpg.repositories.ClanRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +20,8 @@ public class ClanService {
         this.clanRepository = clanRepository;
     }
     
-    // ============================================================================
-    // CRUD BÁSICOS
-    // ============================================================================
-    
+
+    // CRUD
     /**
      * Crea un nuevo clan
      * @param clan Objeto Clan con los datos a guardar
@@ -89,11 +86,8 @@ public class ClanService {
     public int eliminarClan(Long id) {
         return clanRepository.deleteById(id);
     }
-    
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS
-    // ============================================================================
-    
+
+    // METODOS CLAN
     /**
      * Busca un clan por nombre
      * @param nombre Nombre del clan
@@ -121,43 +115,7 @@ public class ClanService {
         return clanRepository.getLiderId(idClan);
     }
 
-    /**
-     * Une a un personaje al clan con validaciones.
-     * @param idClan ID del clan
-     * @param idPersonaje ID del personaje
-     * @return String de ingreso al clan
-     */
-    @Transactional
-    public String unirseAClan(Long idClan, Long idPersonaje) {
-        if (clanRepository.personajeTieneClan(idPersonaje)) {
-            return "El personaje ya pertenece a un clan.";
-        }
-
-        if (!clanRepository.findById(idClan).isPresent()) {
-            return "El clan no existe.";
-        }
-
-        clanRepository.añadirMiembro(idClan, idPersonaje);
-        return "Te has unido al clan exitosamente.";
-    }
-
-    /**
-     * Expulsa o permite que un miembro salga del clan.
-     * Si es el líder, debe dar error.
-     * @param idClan ID del clan
-     * @param idPersonaje ID del personaje
-     * @return String de abandono del clan
-     */
-    @Transactional
-    public String abandonarClan(Long idClan, Long idPersonaje) {
-        Optional<Long> liderId = clanRepository.getLiderId(idClan);
-
-        if (liderId.isPresent() && liderId.get().equals(idPersonaje)) {
-            return "Error: El líder no puede abandonar el clan. Debe transferir el liderazgo primero.";
-        }
-
-        clanRepository.eliminarMiembro(idPersonaje);
-        return "Has abandonado el clan.";
+    public List<Object[]> obtenerAuditoriaLiderazgo() {
+        return clanRepository.obtenerAuditoriaLiderazgo();
     }
 }
-

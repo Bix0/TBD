@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar';
 function Ranking() {
   const [personajes, setPersonajes] = useState([]);
   
-  // 1. Obtenemos TU ID de usuario para saber quién eres en la tabla
+  // 1. Obtenemos tu Id de usuario para saber quien eres en la tabla
   const miUserId = parseInt(localStorage.getItem('userId'));
 
   useEffect(() => {
@@ -26,11 +26,11 @@ function Ranking() {
       .catch(error => console.error("Error cargando el ranking:", error));
   }, []);
 
-  // 2. Buscamos en qué posición del arreglo (índice) quedaste después de ordenar
+  // 2. Buscamos en que posición del arreglo quedaste despues de ordenar
   const miIndice = personajes.findIndex(p => 
     p.id_jugador === miUserId || p.idJugador === miUserId || p.jugador?.id === miUserId
   );
-  // Si te encontramos (índice distinto a -1), tu posición real es el índice + 1
+  // Si te encontramos, tu posición real es el índice + 1
   const miPosicionActual = miIndice !== -1 ? miIndice + 1 : null;
 
   return (
@@ -41,7 +41,7 @@ function Ranking() {
           🏆 Ranking DKP del Clan
         </h1>
 
-        {/* 3. BANNER DE MOTIVACIÓN: Solo se muestra si el usuario tiene un personaje */}
+        
         {miPosicionActual && (
           <div style={{ textAlign: 'center', marginBottom: '30px', fontSize: '18px', color: '#aaa' }}>
             Tu posición actual es: <strong style={{ color: '#ff9800', fontSize: '24px' }}>#{miPosicionActual}</strong>
@@ -66,7 +66,7 @@ function Ranking() {
               const clase = personaje.clase;
               const puntos = personaje.puntos_merito || personaje.puntosMerito || 0;
               
-              // 4. Verificamos si esta fila que se está dibujando es la tuya
+              
               const esMiPersonaje = (personaje.id_jugador === miUserId || personaje.idJugador === miUserId || personaje.jugador?.id === miUserId);
               
               let colorPosicion = '#aaa';

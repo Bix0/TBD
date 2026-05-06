@@ -19,11 +19,8 @@ public class InventarioService {
     public InventarioService(InventarioRepository inventarioRepository) {
         this.inventarioRepository = inventarioRepository;
     }
-    
-    // ============================================================================
-    // CRUD BÁSICOS
-    // ============================================================================
-    
+
+    // CRUD BASICOS
     /**
      * Crea un nuevo registro de inventario
      * @param inventario Objeto Inventario con los datos a guardar
@@ -71,10 +68,8 @@ public class InventarioService {
         return inventarioRepository.deleteById(id);
     }
     
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS
-    // ============================================================================
-    
+
+    // METODOS ESPECIFICOS
     /**
      * Obtiene todos los items del inventario de un personaje
      * @param personajeId ID del personaje

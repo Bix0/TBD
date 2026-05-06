@@ -1,6 +1,5 @@
 import React from 'react';
 
-// Aquí nos aseguramos de recibir EXACTAMENTE los mismos nombres que mandamos desde Raids.jsx
 function RaidFilterBar({ rolFiltro, setRolFiltro, ilvlFiltro, setIlvlFiltro }) {
   return (
     <div style={{ display: 'flex', gap: '20px', alignItems: 'center', backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #333' }}>
@@ -20,7 +19,7 @@ function RaidFilterBar({ rolFiltro, setRolFiltro, ilvlFiltro, setIlvlFiltro }) {
         </select>
       </div>
 
-      {/* Filtro por Item Level (Cambiado a input numérico) */}
+      {/* Filtro por Item Level  */}
       <div>
         <label style={{ marginRight: '10px', color: '#aaa', fontWeight: 'bold' }}>Item level mínimo:</label>
         <input 

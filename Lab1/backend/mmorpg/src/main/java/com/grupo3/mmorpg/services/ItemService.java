@@ -21,10 +21,8 @@ public class ItemService {
         this.itemRepository = itemRepository;
     }
     
-    // ============================================================================
-    // CRUD BÁSICOS PARA ITEM
-    // ============================================================================
-    
+    // CRUD PARA ITEM
+
     /**
      * Crea un nuevo item
      * @param item Objeto Item con los datos a guardar
@@ -71,11 +69,9 @@ public class ItemService {
     public int eliminarItem(Long id) {
         return itemRepository.deleteById(id);
     }
-    
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS PARA ITEM
-    // ============================================================================
-    
+
+    // METODOS ESPECIFICOS PARA ITEM
+
     /**
      * Busca un item por nombre
      * @param nombre Nombre del item
@@ -93,11 +89,9 @@ public class ItemService {
     public List<Item> obtenerPorItemLevelMin(Integer itemLevel) {
         return itemRepository.findByItemLevelMin(itemLevel);
     }
-    
-    // ============================================================================
-    // MÉTODOS PARA ITEM_CLASE_PERMITIDA
-    // ============================================================================
-    
+
+    // METODOS PARA ITEM_CLASE_PERMITIDA (falta implementar)
+
     /**
      * Agrega una clase permitida para un item
      * @param idItem ID del item

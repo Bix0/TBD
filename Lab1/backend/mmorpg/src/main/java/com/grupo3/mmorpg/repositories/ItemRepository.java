@@ -39,11 +39,8 @@ public class ItemRepository {
     public ItemRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
-    
-    // ============================================================================
-    // CRUD BÁSICOS PARA ITEM
-    // ============================================================================
-    
+
+    // CRUD PARA ITEM
     /**
      * Crea un nuevo item en la base de datos
      * INSERT INTO Item (nombre, item_lvl, ganancia_dkp) VALUES (?, ?, ?)
@@ -89,11 +86,9 @@ public class ItemRepository {
         String sql = "DELETE FROM Item WHERE id_item = ?";
         return jdbcTemplate.update(sql, id);
     }
-    
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS PARA ITEM
-    // ============================================================================
-    
+
+    // METODOS PARA ITEM
+
     /**
      * Busca un item por nombre
      * SELECT * FROM Item WHERE nombre = ?
@@ -113,10 +108,7 @@ public class ItemRepository {
         return jdbcTemplate.query(sql, new Object[]{itemLevel}, ITEM_ROW_MAPPER);
     }
     
-    // ============================================================================
-    // MÉTODOS PARA ITEM_CLASE_PERMITIDA
-    // ============================================================================
-    
+    // METODOS PARA ITEM_CLASE_PERMITIDA (Falta implementar)
     /**
      * Agrega una clase permitida para un item
      * INSERT INTO Item_Clase_Permitida (id_item, clase_permitida) VALUES (?, ?)

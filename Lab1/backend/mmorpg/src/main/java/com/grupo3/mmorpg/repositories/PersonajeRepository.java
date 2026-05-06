@@ -36,11 +36,8 @@ public class PersonajeRepository {
     public PersonajeRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
-    
-    // ============================================================================
-    // CRUD BÁSICOS
-    // ============================================================================
-    
+
+    //CRUD
     /**
      * Crea un nuevo personaje en la base de datos
      * INSERT INTO Personaje (id_jugador, id_clan, nombre, clase, nivel, faccion, item_level, puntos_merito, rol_clan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -107,11 +104,8 @@ public class PersonajeRepository {
         String sql = "DELETE FROM Personaje WHERE id_personaje = ?";
         return jdbcTemplate.update(sql, id);
     }
-    
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS
-    // ============================================================================
-    
+
+    // METODOS PERSONAJE
     /**
      * Obtiene todos los personajes de un clan específico
      * SELECT * FROM Personaje WHERE id_clan = ? ORDER BY id_personaje
@@ -167,4 +161,9 @@ public class PersonajeRepository {
         List<Personaje> result = jdbcTemplate.query(sql, new Object[]{jugadorId}, PERSONAJE_ROW_MAPPER);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
+    public List<Personaje> findAllByJugadorIdList(Long jugadorId) {
+        String sql = "SELECT * FROM Personaje WHERE id_jugador = ? ORDER BY id_personaje";
+        return jdbcTemplate.query(sql, new Object[]{jugadorId}, PERSONAJE_ROW_MAPPER);
+    }
+
 }

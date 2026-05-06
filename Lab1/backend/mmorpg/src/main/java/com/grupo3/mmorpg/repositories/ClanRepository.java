@@ -29,11 +29,8 @@ public class ClanRepository {
     public ClanRepository(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
-    
-    // ============================================================================
-    // CRUD BÁSICOS
-    // ============================================================================
-    
+
+    //CRUD
     /**
      * Crea un nuevo clan en la base de datos
      * INSERT INTO Clan (nombre, id_lider) VALUES (?, ?)
@@ -89,11 +86,9 @@ public class ClanRepository {
         String sql = "DELETE FROM Clan WHERE id_clan = ?";
         return jdbcTemplate.update(sql, id);
     }
-    
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS
-    // ============================================================================
-    
+
+    //METODOS ESPECIFICOS
+
     /**
      * Busca un clan por su nombre
      * SELECT * FROM Clan WHERE nombre = ?
@@ -125,31 +120,21 @@ public class ClanRepository {
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 
-    /**
-     * Agrega un personaje a un clan asignándole el ID del clan.
-     * UPDATE Personaje SET id_clan = ?, rol_clan = 'Iniciado' WHERE id_personaje = ?
-     */
-    public int añadirMiembro(Long idClan, Long idPersonaje) {
-        String sql = "UPDATE Personaje SET id_clan = ?, rol_clan = 'Iniciado' WHERE id_personaje = ?";
-        return jdbcTemplate.update(sql, idClan, idPersonaje);
-    }
+    public List<Object[]> obtenerAuditoriaLiderazgo() {
+        // Usamos LEFT JOIN y COALESCE por si es el Primer Rey y no destronó a nadie
+        String sql = "SELECT a.id_auditoria, c.nombre AS clan, COALESCE(p1.nombre, 'Nadie') AS antiguo, p2.nombre AS nuevo, a.fecha_cambio " +
+                "FROM Auditoria_Liderazgo a " +
+                "JOIN Clan c ON a.id_clan = c.id_clan " +
+                "LEFT JOIN Personaje p1 ON a.id_antiguo_lider = p1.id_personaje " +
+                "JOIN Personaje p2 ON a.id_nuevo_lider = p2.id_personaje " +
+                "ORDER BY a.fecha_cambio DESC";
 
-    /**
-     * Elimina a un personaje del clan (pone su id_clan en NULL).
-     * UPDATE Personaje SET id_clan = NULL, rol_clan = NULL WHERE id_personaje = ?
-     */
-    public int eliminarMiembro(Long idPersonaje) {
-        String sql = "UPDATE Personaje SET id_clan = NULL, rol_clan = NULL WHERE id_personaje = ?";
-        return jdbcTemplate.update(sql, idPersonaje);
-    }
-
-    /**
-     * Verifica si un personaje ya tiene clan.
-     * SELECT COUNT(*) FROM Personaje WHERE id_personaje = ? AND id_clan IS NOT NULL
-     */
-    public boolean personajeTieneClan(Long idPersonaje) {
-        String sql = "SELECT COUNT(*) FROM Personaje WHERE id_personaje = ? AND id_clan IS NOT NULL";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, idPersonaje);
-        return count != null && count > 0;
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new Object[]{
+                rs.getLong("id_auditoria"),
+                rs.getString("clan"),
+                rs.getString("antiguo"),
+                rs.getString("nuevo"),
+                rs.getTimestamp("fecha_cambio")
+        });
     }
 }

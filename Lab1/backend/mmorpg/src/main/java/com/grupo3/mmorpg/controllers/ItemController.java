@@ -23,10 +23,7 @@ public class ItemController {
         this.itemService = itemService;
     }
     
-    // ============================================================================
-    // CRUD BÁSICOS PARA ITEM
-    // ============================================================================
-    
+     //CRUD BASICOS PARA ITEM
     /**
      * Crea un nuevo item
      * POST /api/items
@@ -127,11 +124,8 @@ public class ItemController {
     public List<Item> obtenerPorItemLevelMin(@PathVariable Integer itemLevel) {
         return itemService.obtenerPorItemLevelMin(itemLevel);
     }
-    
-    // ============================================================================
-    // MÉTODOS PARA ITEM_CLASE_PERMITIDA
-    // ============================================================================
-    
+
+    // MÉTODOS PARA ITEM_CLASE_PERMITIDA (falta implmentar filtro)
     /**
      * Agrega una clase permitida para un item
      * POST /api/items/{id}/clases-permitidas

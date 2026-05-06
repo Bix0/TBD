@@ -21,11 +21,7 @@ public class ClanController {
     public ClanController(ClanService clanService) {
         this.clanService = clanService;
     }
-    
-    // ============================================================================
-    // CRUD BÁSICOS
-    // ============================================================================
-    
+
     /**
      * Crea un nuevo clan
      * POST /api/clanes
@@ -116,11 +112,8 @@ public class ClanController {
             return ResponseEntity.notFound().build();
         }
     }
-    
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS
-    // ============================================================================
-    
+
+    //METODOS ESPECIFICOS
     /**
      * Busca un clan por nombre
      * GET /api/clanes/nombre/{nombre}
@@ -156,5 +149,9 @@ public class ClanController {
         return clanService.obtenerLiderId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+    @GetMapping("/auditoria")
+    public ResponseEntity<List<Object[]>> obtenerAuditoriaLiderazgo() {
+        return ResponseEntity.ok(clanService.obtenerAuditoriaLiderazgo());
     }
 }

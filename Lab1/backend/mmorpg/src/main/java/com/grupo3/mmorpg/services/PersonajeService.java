@@ -20,10 +20,8 @@ public class PersonajeService {
         this.personajeRepository = personajeRepository;
     }
     
-    // ============================================================================
-    // CRUD BÁSICOS
-    // ============================================================================
-    
+
+    // CRUD
     /**
      * Crea un nuevo personaje
      * @param personaje Objeto Personaje con los datos a guardar
@@ -71,10 +69,8 @@ public class PersonajeService {
         return personajeRepository.deleteById(id);
     }
     
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS
-    // ============================================================================
-    
+
+    // METODOS ESPECIFICOS
     /**
      * Obtiene todos los personajes de un clan específico
      * @param clanId ID del clan
@@ -129,4 +125,8 @@ public class PersonajeService {
     public Optional<Personaje> obtenerPorJugadorId(Long jugadorId) {
         return personajeRepository.findByJugadorId(jugadorId);
     }
+    public List<Personaje> obtenerTodosPorJugadorId(Long jugadorId) {
+        return personajeRepository.findAllByJugadorIdList(jugadorId);
+    }
+
 }

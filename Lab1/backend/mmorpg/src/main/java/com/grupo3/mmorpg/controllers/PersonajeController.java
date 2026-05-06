@@ -15,17 +15,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/personajes")
 public class PersonajeController {
-    
+
     private final PersonajeService personajeService;
-    
+
     public PersonajeController(PersonajeService personajeService) {
         this.personajeService = personajeService;
     }
-    
-    // ============================================================================
-    // CRUD BÁSICOS
-    // ============================================================================
-    
+
+
+    // CRUD BASICOS
     /**
      * Crea un nuevo personaje
      * POST /api/personajes
@@ -41,7 +39,7 @@ public class PersonajeController {
             return ResponseEntity.badRequest().body(null);
         }
     }
-    
+
     /**
      * Obtiene todos los personajes
      * GET /api/personajes
@@ -51,7 +49,7 @@ public class PersonajeController {
     public List<Personaje> obtenerTodosLosPersonajes() {
         return personajeService.obtenerTodosLosPersonajes();
     }
-    
+
     /**
      * Obtiene un personaje por su ID
      * GET /api/personajes/{id}
@@ -64,7 +62,7 @@ public class PersonajeController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-    
+
     /**
      * Actualiza un personaje existente
      * PUT /api/personajes/{id}
@@ -82,7 +80,7 @@ public class PersonajeController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     /**
      * Elimina un personaje por su ID
      * DELETE /api/personajes/{id}
@@ -98,11 +96,8 @@ public class PersonajeController {
             return ResponseEntity.notFound().build();
         }
     }
-    
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS
-    // ============================================================================
-    
+
+    // METODOS ESPECIFICOS
     /**
      * Obtiene personajes por clan
      * GET /api/personajes/clan/{clanId}
@@ -113,7 +108,7 @@ public class PersonajeController {
     public List<Personaje> obtenerPorClan(@PathVariable Long clanId) {
         return personajeService.obtenerPersonajesPorClan(clanId);
     }
-    
+
     /**
      * Obtiene personajes por clase
      * GET /api/personajes/clase/{clase}
@@ -124,7 +119,7 @@ public class PersonajeController {
     public List<Personaje> obtenerPorClase(@PathVariable String clase) {
         return personajeService.obtenerPorClase(clase);
     }
-    
+
     /**
      * Obtiene personajes por rol de clan
      * GET /api/personajes/rol/{rolClan}
@@ -135,7 +130,7 @@ public class PersonajeController {
     public List<Personaje> obtenerPorRolClan(@PathVariable String rolClan) {
         return personajeService.obtenerPorRolClan(rolClan);
     }
-    
+
     /**
      * Obtiene personajes con item_level mínimo
      * GET /api/personajes/itemlevel/{itemLevel}
@@ -146,7 +141,7 @@ public class PersonajeController {
     public List<Personaje> obtenerPorItemLevelMin(@PathVariable Integer itemLevel) {
         return personajeService.obtenerPorItemLevelMin(itemLevel);
     }
-    
+
     /**
      * Actualiza los puntos de mérito (DKP) de un personaje
      * PUT /api/personajes/{id}/merito
@@ -163,7 +158,7 @@ public class PersonajeController {
             return ResponseEntity.notFound().build();
         }
     }
-    
+
     /**
      * Obtiene el personaje principal de un jugador
      * GET /api/personajes/jugador/{jugadorId}
@@ -175,5 +170,10 @@ public class PersonajeController {
         return personajeService.obtenerPorJugadorId(jugadorId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/jugador/{jugadorId}/todos")
+    public List<Personaje> obtenerTodosPorJugadorId(@PathVariable Long jugadorId) {
+        return personajeService.obtenerTodosPorJugadorId(jugadorId);
     }
 }

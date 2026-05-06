@@ -21,11 +21,8 @@ public class RankingService {
         this.jdbcTemplate = jdbcTemplate;
         this.raidRepository = raidRepository;
     }
-    
-    // ============================================================================
-    // MÉTODOS PARA RANKING (VISTA MATERIALIZADA)
-    // ============================================================================
-    
+
+    // METODOS PARA RANKING
     /**
      * Obtiene el ranking actual de clanes
      * SELECT * FROM mv_ranking_clan

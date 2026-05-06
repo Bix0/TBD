@@ -20,11 +20,8 @@ public class RankingController {
     public RankingController(RankingService rankingService) {
         this.rankingService = rankingService;
     }
-    
-    // ============================================================================
-    // MÉTODOS PARA RANKING (VISTA MATERIALIZADA)
-    // ============================================================================
-    
+
+    // METODOS PARA RANKING
     /**
      * Obtiene el ranking actual de clanes
      * GET /api/ranking

@@ -21,11 +21,8 @@ public class InventarioController {
     public InventarioController(InventarioService inventarioService) {
         this.inventarioService = inventarioService;
     }
-    
-    // ============================================================================
-    // CRUD BÁSICOS
-    // ============================================================================
-    
+
+    //CRUD BASICOS
     /**
      * Crea un nuevo registro de inventario
      * POST /api/personajes/{id}/inventario
@@ -106,10 +103,7 @@ public class InventarioController {
         }
     }
     
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS
-    // ============================================================================
-    
+    //METODOS ESPECIFICOS
     /**
      * Obtiene los items equipados de un personaje
      * GET /api/personajes/{id}/inventario/equipados

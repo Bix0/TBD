@@ -32,10 +32,8 @@ public class InventarioRepository {
         this.jdbcTemplate = jdbcTemplate;
     }
     
-    // ============================================================================
-    // CRUD BÁSICOS
-    // ============================================================================
-    
+
+    //CRUD BASICOS
     /**
      * Crea un nuevo registro de inventario
      * INSERT INTO Inventario (id_item, id_personaje, cantidad, equipado) VALUES (?, ?, ?, ?)
@@ -92,11 +90,8 @@ public class InventarioRepository {
         String sql = "DELETE FROM Inventario WHERE id_inventario = ?";
         return jdbcTemplate.update(sql, id);
     }
-    
-    // ============================================================================
-    // MÉTODOS ESPECÍFICOS
-    // ============================================================================
-    
+
+    //METODOS ESPECIFICOS
     /**
      * Obtiene todos los items del inventario de un personaje
      * SELECT * FROM Inventario WHERE id_personaje = ? ORDER BY id_inventario
