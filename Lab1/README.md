@@ -98,7 +98,13 @@ jugador3  | 123456 | Usuario
 
 # Posibles errores
 - 'port 8080 already in use', el puerto 8080 esta siendo usado por otro proceso:
-Solución: lsof -ti :8080 | xargs kill -9 (En terminal)
+Solución: Matar el proceso ejecutando el/los siguientes comandos en terminal:
+lsof -ti :8080 | xargs kill -9  //MacOS
+
+sudo fuser -k 8080/tcp          //Linux
+
+netstat -ano | findstr :8080    //Windows -> obtener PID de la linea que dice LISTENING
+taskkill /PID [PID] /F          //Windows -> [PID] obtenido con el comando anterior
 
 ### 5.- Iniciar frontend (React + Vite)
 <<Abrir terminal en /lab1>>
