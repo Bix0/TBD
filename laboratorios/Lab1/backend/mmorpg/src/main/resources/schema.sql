@@ -1,6 +1,3 @@
--- ==============================================================================
--- SCRIPT AUTOGESTIONADO
--- ==============================================================================
 
 -- 1. LIMPIEZA DE ESQUEMA (Cascada total)
 DROP MATERIALIZED VIEW IF EXISTS mv_ranking_clan CASCADE//
@@ -86,10 +83,6 @@ CREATE TABLE Historial_Loot (
 )//
 
 
--- ==============================================================================
--- REQUERIMIENTOS AVANZADOS
--- ==============================================================================
-
 -- 3. ÍNDICES DE RENDIMIENTO
 CREATE INDEX IF NOT EXISTS idx_personaje_clase ON Personaje(clase)//
 CREATE INDEX IF NOT EXISTS idx_inscripcion_raid ON Inscripcion_Raid(id_raid)//
@@ -126,9 +119,8 @@ SELECT p.id_personaje, p.nombre, p.clase, p.puntos_merito AS dkp_actual, COUNT(i
 FROM Personaje p JOIN Inscripcion_Raid i ON p.id_personaje = i.id_personaje
 WHERE i.asistio = TRUE GROUP BY p.id_personaje, p.nombre, p.clase, p.puntos_merito ORDER BY total_raids_asistidas DESC, dkp_actual DESC//
 
--- =========================================================
+
 -- 6. TRIGGERS
--- =========================================================
 
 -- T1: Validar Item Level al inscribirse a Raid
 CREATE OR REPLACE FUNCTION fn_validar_item_level() RETURNS TRIGGER AS $$
