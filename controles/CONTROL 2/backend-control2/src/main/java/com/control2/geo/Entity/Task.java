@@ -24,7 +24,7 @@ public class Task {
     private Long idTask;
 
     @Column(nullable = false)
-    private String tittle;
+    private String title;
 
     @Column(nullable = false)
     private String description;
