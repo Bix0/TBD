@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: control2-db
+    environment:
+      POSTGRES_DB: backend-control2
+      POSTGRES_USER: adminControl
+      POSTGRES_PASSWORD: Elpro123#
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U adminControl -d backend-control2"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend-control2
+    container_name: control2-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/backend-control2
+      SPRING_DATASOURCE_USERNAME: adminControl
+      SPRING_DATASOURCE_PASSWORD: Elpro123#
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend-control2
+    container_name: control2-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
