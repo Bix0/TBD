@@ -75,4 +75,12 @@ public class TaskController {
         }
         return ResponseEntity.ok(taskService.deleteTask(idTask));
     }
+
+    @PutMapping("/tasks/completeTask/{idTask}")
+    public ResponseEntity<String> completeTask(@PathVariable Long idTask, @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        if (!authenticatedUser.getId().equals(idTask)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para completar esta tarea.");
+        }
+        return ResponseEntity.ok(taskService.changeTaskStatus(idTask));
+    }
 }

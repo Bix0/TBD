@@ -41,12 +41,20 @@ public class TaskService {
         Task task = getTaskById(id);
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
-        task.setStatus(dto.getStatus());
         task.setDueDate(dto.getDueDate());
         task.setGeoPoint(dto.getGeoPoint());
         // Guardar los cambios en la base de datos
         taskRepository.save(task);
         return "Tarea modificada exitosamente";
+    }
+
+    public String changeTaskStatus(Long id) {
+        // Lógica para cambiar el estado de una tarea
+        Task task = getTaskById(id);
+        task.setStatus("Completada");
+        // Guardar los cambios en la base de datos
+        taskRepository.save(task);
+        return "Tarea marcada como completada exitosamente";
     }
 
     public String deleteTask(Long id) {
