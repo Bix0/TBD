@@ -16,6 +16,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final BcryptService bcryptService;
+    private final GeoPointService geoPointService;
 
     public User getUserById(Long id) {
         return userRepository.findById(id).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -28,7 +29,7 @@ public class UserService {
     public String createUser(UserRequest dto) {
         User user = new User();
         user.setUserName(dto.getUserName());
-        user.setLocation(dto.getGeoPoint());
+        user.setGeoPoint(geoPointService.createGeoPoint(dto.getLocationUser()));
         user.setPassword(bcryptService.encriptarClave(dto.getPassword()));
         userRepository.save(user);
         return "Usuario creado exitosamente";
@@ -37,7 +38,7 @@ public class UserService {
     public String modifyUser(Long id, UserRequest dto) {
         User user = getUserById(id);
         user.setUserName(dto.getUserName());
-        user.setLocation(dto.getGeoPoint());
+        user.setGeoPoint(geoPointService.createGeoPoint(dto.getLocationUser()));
         if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
             user.setPassword(bcryptService.encriptarClave(dto.getPassword()));
             userRepository.save(user);

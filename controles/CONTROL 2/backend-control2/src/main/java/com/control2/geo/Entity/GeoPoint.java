@@ -20,8 +20,11 @@ public class GeoPoint {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
-    private Long idGeoPoint;
-
+    private Long idGeoPoint; 
+    
     @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false, columnDefinition = "geometry(Point,4326)")
     private Point point;
 }
