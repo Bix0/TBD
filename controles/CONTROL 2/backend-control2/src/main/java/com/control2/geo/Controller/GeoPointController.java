@@ -2,15 +2,23 @@ package com.control2.geo.Controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.control2.geo.Dto.GeoPointRequest;
 import com.control2.geo.Entity.GeoPoint;
 import com.control2.geo.Service.GeoPointService;
+import com.control2.geo.security.UserPrincipal;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,5 +50,31 @@ public class GeoPointController {
         }
         // Return 200 OK with the geo point
         return ResponseEntity.ok(geoPoint);
+    }
+
+    @PostMapping("/GeoPoints/creategeopoint/{userId}")
+    public ResponseEntity<String> createGeoPoint(@PathVariable Long userId, @RequestBody GeoPointRequest geoPointRequest, @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        if (!authenticatedUser.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para crear un punto geográfico.");
+        }
+        geoPointService.createGeoPoint(geoPointRequest);
+        return ResponseEntity.ok("GeoPoint creado exitosamente");
+    }
+
+    @PutMapping("/GeoPoints/modifygeopoint/{idGeoPoint}/{userId}")
+    public ResponseEntity<String> modifyGeoPoint(@PathVariable Long idGeoPoint, @PathVariable Long userId, @RequestBody GeoPointRequest geoPointRequest, @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        if (!authenticatedUser.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para modificar este punto geográfico.");
+        }
+        geoPointService.modifyGeoPoint(idGeoPoint, geoPointRequest);
+        return ResponseEntity.ok("GeoPoint modificado exitosamente");
+    }
+    @DeleteMapping("/GeoPoints/deletegeopoint/{idGeoPoint}/{userId}")
+    public ResponseEntity<String> deleteGeoPoint(@PathVariable Long idGeoPoint, @PathVariable Long userId, @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        if (!authenticatedUser.getId().equals(userId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para eliminar este punto geográfico.");
+        }
+        geoPointService.deleteGeoPoint(idGeoPoint);
+        return ResponseEntity.ok("GeoPoint eliminado exitosamente");
     }
 }

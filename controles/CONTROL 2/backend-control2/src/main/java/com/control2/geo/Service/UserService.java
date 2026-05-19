@@ -35,7 +35,7 @@ public class UserService {
         return "Usuario creado exitosamente";
     }
 
-    public String modifyUser(Long id, UserRequest dto) {
+    public String modifyUser(Long id, UserRequest  dto) {
         User user = getUserById(id);
         user.setUserName(dto.getUserName());
         user.setGeoPoint(geoPointService.createGeoPoint(dto.getLocationUser()));
