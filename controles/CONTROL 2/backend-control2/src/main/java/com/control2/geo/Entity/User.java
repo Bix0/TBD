@@ -1,11 +1,15 @@
 package com.control2.geo.Entity;
 
+import java.util.List;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
@@ -16,7 +20,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "users")
 @Entity
 public class User {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false)
@@ -26,12 +30,17 @@ public class User {
     private String userName;
 
     @Column(nullable = false)
-    private String password; //Need to be crypted with bcrypt
+    private String password; // Need to be crypted with bcrypt
+
+    @Column(nullable = false)
+    private String email;
 
     // Se define explícitamente el tipo de columna espacial (SRID 4326)
     @ManyToOne
     @JoinColumn(name = "idGeoPoint", nullable = false)
     private GeoPoint geoPoint;
-    
 
+    @ManyToMany
+    @JoinTable(name = "userTasks", joinColumns = @JoinColumn(name = "idUser"), inverseJoinColumns = @JoinColumn(name = "idTask"))
+    private List<Task> tasksDone;
 }

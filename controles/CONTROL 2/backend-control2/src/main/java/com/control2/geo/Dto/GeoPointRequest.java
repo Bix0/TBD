@@ -11,5 +11,5 @@ public class GeoPointRequest {
     private Double longitude;    
     private Double latitude;
     private String name;
-
+    private String sector;
 }

@@ -27,4 +27,7 @@ public class GeoPoint {
 
     @Column(nullable = false, columnDefinition = "geometry(Point,4326)")
     private Point point;
+
+    @Column(nullable = false)
+    private String sector;
 }

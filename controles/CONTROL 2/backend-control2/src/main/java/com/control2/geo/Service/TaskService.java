@@ -1,6 +1,7 @@
 package com.control2.geo.Service;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
@@ -15,14 +16,19 @@ import lombok.RequiredArgsConstructor;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final UserService userService;
 
     public Task getTaskById(Long id) {
         return taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Tarea no encontrada"));
     }
 
-    public List<Task> getAllTasks() {
-        return taskRepository.findAll();
+    public List<Task> getAllTasks(String status, String keyword) {
+        String formattedKeyword = (keyword != null && !keyword.trim().isEmpty())
+                ? "%" + keyword.trim().toLowerCase() + "%"
+                : null;
+        return taskRepository.searchTasks(status, formattedKeyword);
     }
+
     public String createTask(TaskRequest dto) {
         // Lógica para crear una nueva tarea
         Task task = new Task();
@@ -48,12 +54,14 @@ public class TaskService {
         return "Tarea modificada exitosamente";
     }
 
-    public String changeTaskStatus(Long id) {
+    public String changeTaskStatus(Long idTask, Long idUser) {
         // Lógica para cambiar el estado de una tarea
-        Task task = getTaskById(id);
+        Task task = getTaskById(idTask);
+        userService.addTaskToUser(idUser, task);
         task.setStatus("Completada");
         // Guardar los cambios en la base de datos
         taskRepository.save(task);
+
         return "Tarea marcada como completada exitosamente";
     }
 
@@ -62,5 +70,30 @@ public class TaskService {
         Task task = getTaskById(id);
         taskRepository.delete(task);
         return "Tarea eliminada exitosamente";
+    }
+
+    public Task getClosestPendingTask(Long userId) {
+        return taskRepository.findClosestPendingTask(userId);
+    }
+
+    public java.util.Map<String, Object> getSectorWithMostCompletedTasksWithinRadius(Long userId, double radiusInKm) {
+        double radiusInMeters = radiusInKm * 1000.0;
+        return taskRepository.findSectorWithMostCompletedTasksWithinRadius(userId, radiusInMeters);
+    }
+
+    public Double getAverageDistanceOfCompletedTasks(Long userId) {
+        return taskRepository.getAverageDistanceOfCompletedTasks(userId);
+    }
+
+    public List<java.util.Map<String, Object>> getPendingTasksConcentrationPerSector() {
+        return taskRepository.getPendingTasksConcentrationPerSector();
+    }
+
+    public List<Map<String, Object>> getTasksCountPerUserAndSector() {
+        return userService.getTasksCountPerUserAndSector();
+    }
+
+    public List<Map<String, Object>> getTasksCountByUserAndSector(Long userId) {
+        return taskRepository.countTasksByUserAndSector(userId);
     }
 }

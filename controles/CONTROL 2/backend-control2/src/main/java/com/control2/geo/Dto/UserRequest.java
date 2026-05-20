@@ -1,6 +1,5 @@
 package com.control2.geo.Dto;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,4 +11,5 @@ public class UserRequest {
     private String userName;
     private String password;
     private GeoPointRequest locationUser;
+    private String email;
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.control2.geo.Dto.UserRequest;
+import com.control2.geo.Entity.Task;
 import com.control2.geo.Entity.User;
 import com.control2.geo.Repository.UserRepository;
 
@@ -31,21 +32,22 @@ public class UserService {
         user.setUserName(dto.getUserName());
         user.setGeoPoint(geoPointService.createGeoPoint(dto.getLocationUser()));
         user.setPassword(bcryptService.encriptarClave(dto.getPassword()));
+        user.setEmail(dto.getEmail());
         userRepository.save(user);
         return "Usuario creado exitosamente";
     }
 
-    public String modifyUser(Long id, UserRequest  dto) {
+    public String modifyUser(Long id, UserRequest dto) {
         User user = getUserById(id);
         user.setUserName(dto.getUserName());
         user.setGeoPoint(geoPointService.createGeoPoint(dto.getLocationUser()));
+        user.setEmail(dto.getEmail());
         if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
             user.setPassword(bcryptService.encriptarClave(dto.getPassword()));
             userRepository.save(user);
             return "Usuario modificado exitosamente";
-        }
-        else{
-            
+        } else {
+
             return "Usuario sin modificar, la contrasenia no es valida";
         }
     }
@@ -54,5 +56,15 @@ public class UserService {
         User user = getUserById(id);
         userRepository.delete(user);
         return "Usuario eliminado exitosamente";
+    }
+
+    public void addTaskToUser(Long idUser, Task task) {
+        User user = getUserById(idUser);
+        user.getTasksDone().add(task);
+        userRepository.save(user);
+    }
+
+    public List<java.util.Map<String, Object>> getTasksCountPerUserAndSector() {
+        return userRepository.countTasksPerUserAndSector();
     }
 }

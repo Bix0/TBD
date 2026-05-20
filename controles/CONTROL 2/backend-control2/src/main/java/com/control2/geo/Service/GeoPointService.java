@@ -42,6 +42,7 @@ public class GeoPointService {
         GeoPoint geoPoint = new GeoPoint();
         geoPoint.setPoint(createPoint(dto.getLatitude(), dto.getLongitude()));
         geoPoint.setName(dto.getName());
+        geoPoint.setSector(dto.getSector());
         return geoPointRepository.save(geoPoint);
     }
 
@@ -49,6 +50,7 @@ public class GeoPointService {
         GeoPoint geoPoint = getGeoPointById(id);
         geoPoint.setPoint(createPoint(dto.getLatitude(), dto.getLongitude()));
         geoPoint.setName(dto.getName());
+        geoPoint.setSector(dto.getSector());
         geoPointRepository.save(geoPoint);
         return "GeoPoint modificado exitosamente";
     }
