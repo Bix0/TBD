@@ -1,11 +1,15 @@
 package com.control2.geo.Service;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
 import com.control2.geo.Dto.TaskRequest;
+import com.control2.geo.Dto.TaskResponseDTO;
 import com.control2.geo.Entity.Task;
 import com.control2.geo.Repository.TaskRepository;
 
@@ -70,6 +74,45 @@ public class TaskService {
         Task task = getTaskById(id);
         taskRepository.delete(task);
         return "Tarea eliminada exitosamente";
+    }
+
+    /*public List<TaskResponseDTO> verifyTaskByDate(){
+        List<Task> taskList = getAllTasks("Pendiente", null);
+        List<TaskResponseDTO> list = new ArrayList<TaskResponseDTO>();
+        LocalDate today = LocalDate.now();
+        for (Task task : taskList) {
+            if (list.size() >= 5) {
+                break; 
+            }
+            long daysBetween = ChronoUnit.DAYS.between(today, task.getDueDate());
+            if(daysBetween <= 1 && daysBetween >= 0 ){
+                TaskResponseDTO task2 = new TaskResponseDTO();
+                task2.setId(task.getIdTask());
+                task2.setStatus(task.getStatus());
+                task2.setTitle(task.getTitle());
+                list.add(task2);
+            }
+        }
+        return list;
+    }*/
+    public List<TaskResponseDTO> verifyTaskByDate(){
+        LocalDate today = LocalDate.now();
+        List<Task> taskList = getAllTasks("Pendiente", null);
+
+        return taskList.stream()
+        .filter(task -> {
+            long days =  ChronoUnit.DAYS.between(today, task.getDueDate());
+            return days >= 0 && days <= 1;
+        })
+        .limit(5)
+        .map(task -> {
+            TaskResponseDTO dto = new TaskResponseDTO();
+            dto.setId(task.getIdTask());
+            dto.setStatus(task.getStatus());
+            dto.setTitle(task.getTitle());
+            return dto;
+        })
+        .toList();
     }
 
     public Task getClosestPendingTask(Long userId) {
