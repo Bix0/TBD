@@ -32,8 +32,6 @@ public class User {
     @Column(nullable = false)
     private String password; // Need to be crypted with bcrypt
 
-    @Column(nullable = false)
-    private String email;
 
     // Se define explícitamente el tipo de columna espacial (SRID 4326)
     @ManyToOne

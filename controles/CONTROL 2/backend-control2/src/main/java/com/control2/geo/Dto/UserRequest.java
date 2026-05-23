@@ -11,5 +11,4 @@ public class UserRequest {
     private String userName;
     private String password;
     private GeoPointRequest locationUser;
-    private String email;
 }

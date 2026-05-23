@@ -32,7 +32,6 @@ public class UserService {
         user.setUserName(dto.getUserName());
         user.setGeoPoint(geoPointService.createGeoPoint(dto.getLocationUser()));
         user.setPassword(bcryptService.encriptarClave(dto.getPassword()));
-        user.setEmail(dto.getEmail());
         userRepository.save(user);
         return "Usuario creado exitosamente";
     }
@@ -41,7 +40,6 @@ public class UserService {
         User user = getUserById(id);
         user.setUserName(dto.getUserName());
         user.setGeoPoint(geoPointService.createGeoPoint(dto.getLocationUser()));
-        user.setEmail(dto.getEmail());
         if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
             user.setPassword(bcryptService.encriptarClave(dto.getPassword()));
             userRepository.save(user);

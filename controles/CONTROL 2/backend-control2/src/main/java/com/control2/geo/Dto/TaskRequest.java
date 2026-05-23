@@ -2,8 +2,6 @@ package com.control2.geo.Dto;
 
 import java.time.LocalDate;
 
-import com.control2.geo.Entity.GeoPoint;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

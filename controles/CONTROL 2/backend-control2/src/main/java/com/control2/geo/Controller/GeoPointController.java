@@ -69,6 +69,7 @@ public class GeoPointController {
         geoPointService.modifyGeoPoint(idGeoPoint, geoPointRequest);
         return ResponseEntity.ok("GeoPoint modificado exitosamente");
     }
+    
     @DeleteMapping("/GeoPoints/deletegeopoint/{idGeoPoint}/{userId}")
     public ResponseEntity<String> deleteGeoPoint(@PathVariable Long idGeoPoint, @PathVariable Long userId, @AuthenticationPrincipal UserPrincipal authenticatedUser) {
         if (!authenticatedUser.getId().equals(userId)) {
