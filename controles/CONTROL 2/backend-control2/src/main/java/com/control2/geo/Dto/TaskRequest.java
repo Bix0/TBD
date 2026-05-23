@@ -16,6 +16,6 @@ public class TaskRequest {
     private String description;
     private String status;
     private LocalDate dueDate;
-    private GeoPoint geoPoint;
+    private Long idGeoPoint;
 
 }

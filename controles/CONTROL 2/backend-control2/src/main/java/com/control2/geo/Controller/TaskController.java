@@ -67,10 +67,8 @@ public class TaskController {
 
     @PutMapping("/tasks/modifytask/{idTask}")
     public ResponseEntity<String> modifyTask(@PathVariable Long idTask, @RequestBody TaskRequest task,
-            @AuthenticationPrincipal UserPrincipal authenticatedUser) {
-        if (!authenticatedUser.getId().equals(idTask)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para modificar una tarea.");
-        }
+                                             @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        //Se elimina la comparación errónea entre el ID de usuario y el ID de tarea.
         return ResponseEntity.ok(taskService.modifyTask(idTask, task));
     }
 
@@ -85,10 +83,13 @@ public class TaskController {
 
     @PutMapping("/tasks/completeTask/{idTask}/{userId}")
     public ResponseEntity<String> completeTask(@PathVariable Long idTask, @PathVariable Long userId,
-            @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+                                               @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        //Verifica que el usuario que inició sesión sea el mismo que intenta completar la tarea.
         if (!authenticatedUser.getId().equals(userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para completar esta tarea.");
         }
+
+        //Asegurar orden (idTask, userId) que espera la firma del método en TaskService.
         return ResponseEntity.ok(taskService.changeTaskStatus(idTask, userId));
     }
 

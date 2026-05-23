@@ -21,6 +21,7 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final UserService userService;
+    private final GeoPointService geoPointService;
 
     public Task getTaskById(Long id) {
         return taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Tarea no encontrada"));
@@ -40,7 +41,9 @@ public class TaskService {
         task.setDescription(dto.getDescription());
         task.setStatus("Pendiente");
         task.setDueDate(dto.getDueDate());
-        task.setGeoPoint(dto.getGeoPoint());
+        if (dto.getIdGeoPoint() != null) {
+            task.setGeoPoint(geoPointService.getGeoPointById(dto.getIdGeoPoint()));
+        }
         // Guardar la tarea en la base de datos (usando un repositorio)
         taskRepository.save(task);
         return "Tarea creada exitosamente";
@@ -52,7 +55,9 @@ public class TaskService {
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
         task.setDueDate(dto.getDueDate());
-        task.setGeoPoint(dto.getGeoPoint());
+        if (dto.getIdGeoPoint() != null) {
+            task.setGeoPoint(geoPointService.getGeoPointById(dto.getIdGeoPoint()));
+        }
         // Guardar los cambios en la base de datos
         taskRepository.save(task);
         return "Tarea modificada exitosamente";

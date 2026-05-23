@@ -42,7 +42,11 @@ public class GeoPointService {
         GeoPoint geoPoint = new GeoPoint();
         geoPoint.setPoint(createPoint(dto.getLatitude(), dto.getLongitude()));
         geoPoint.setName(dto.getName());
-        geoPoint.setSector(dto.getSector());
+        if (dto.getSector() == null || dto.getSector().trim().isEmpty()) {
+            geoPoint.setSector("General");
+        } else {
+            geoPoint.setSector(dto.getSector());
+        }
         return geoPointRepository.save(geoPoint);
     }
 
