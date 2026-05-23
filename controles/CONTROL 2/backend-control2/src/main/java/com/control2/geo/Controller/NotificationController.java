@@ -20,7 +20,7 @@ public class NotificationController {
 
     private final TaskService taskService;
 
-    @GetMapping
+    @GetMapping("/notifications")
     public ResponseEntity<List<TaskResponseDTO>> taskNotifications(){
         List<TaskResponseDTO> list = new ArrayList<TaskResponseDTO>();
         list = taskService.verifyTaskByDate();
