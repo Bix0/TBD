@@ -21,6 +21,7 @@ public class AuthService {
     private final UserService userService;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final BcryptService bcryptService;
 
     public AuthResponse register(UserRequest dto) {
         if (userRepository.findByUserName(dto.getUserName()).isPresent()) {
@@ -37,15 +38,12 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest dto) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        dto.getUserName(),
-                        dto.getPassword()
-                )
-        );
-
         User user = userRepository.findByUserName(dto.getUserName())
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        if (!bcryptService.verificarClave(dto.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Contrasenia incorrecta");
+        }
 
         String token = jwtService.generateToken(user.getUserName());
         return AuthResponse.builder()
