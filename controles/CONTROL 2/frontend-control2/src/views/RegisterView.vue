@@ -57,7 +57,9 @@ const handleRegister = async () => {
         localStorage.setItem("userName", response.userName);
         router.push("/dashboard");
     } catch (e) {
-        if (e.response?.status === 400) {
+        if (e.response?.data?.message) {
+            error.value = e.response.data.message;
+        } else if (e.response?.status === 400) {
             error.value = "El nombre de usuario ya existe";
         } else {
             error.value = "Error al registrarse. Intenta de nuevo";
