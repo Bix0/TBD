@@ -125,7 +125,7 @@ public class TaskService {
         return taskRepository.findClosestPendingTask(userId);
     }
 
-    public java.util.Map<String, Object> getSectorWithMostCompletedTasksWithinRadius(Long userId, double radiusInKm) {
+    public Map<String, Object> getSectorWithMostCompletedTasksWithinRadius(Long userId, double radiusInKm) {
         double radiusInMeters = radiusInKm * 1000.0;
         return taskRepository.findSectorWithMostCompletedTasksWithinRadius(userId, radiusInMeters);
     }
@@ -134,7 +134,7 @@ public class TaskService {
         return taskRepository.getAverageDistanceOfCompletedTasks(userId);
     }
 
-    public List<java.util.Map<String, Object>> getPendingTasksConcentrationPerSector() {
+    public List<Map<String, Object>> getPendingTasksConcentrationPerSector() {
         return taskRepository.getPendingTasksConcentrationPerSector();
     }
 

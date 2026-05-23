@@ -1,6 +1,7 @@
 package com.control2.geo.Service;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
@@ -61,7 +62,7 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public List<java.util.Map<String, Object>> getTasksCountPerUserAndSector() {
+    public List<Map<String, Object>> getTasksCountPerUserAndSector() {
         return userRepository.countTasksPerUserAndSector();
     }
 }
