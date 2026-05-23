@@ -17,38 +17,39 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepository;
-    private final UserService userService;
-    private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
-    private final BcryptService bcryptService;
+        private final UserRepository userRepository;
+        private final UserService userService;
+        private final JwtService jwtService;
+        private final BcryptService bcryptService;
 
-    public AuthResponse register(UserRequest dto) {
-        if (userRepository.findByUserName(dto.getUserName()).isPresent()) {
-            throw new RuntimeException("El nombre de usuario ya existe");
+        public AuthResponse register(UserRequest dto) {
+                if (userRepository.findByUserName(dto.getUserName()).isPresent()) {
+                        throw new RuntimeException("El nombre de usuario ya existe");
+                }
+
+                User user = userService.createUser(dto);
+
+                String token = jwtService.generateToken(user.getUserName(), user.getIdUser());
+                return AuthResponse.builder()
+                                .token(token)
+                                .userName(user.getUserName())
+                                .idUser(user.getIdUser())
+                                .build();
         }
 
-        userService.createUser(dto);
+        public AuthResponse login(LoginRequest dto) {
+                User user = userRepository.findByUserName(dto.getUserName())
+                                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        String token = jwtService.generateToken(dto.getUserName());
-        return AuthResponse.builder()
-                .token(token)
-                .userName(dto.getUserName())
-                .build();
-    }
+                if (!bcryptService.verificarClave(dto.getPassword(), user.getPassword())) {
+                        throw new RuntimeException("Contrasenia incorrecta");
+                }
 
-    public AuthResponse login(LoginRequest dto) {
-        User user = userRepository.findByUserName(dto.getUserName())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        if (!bcryptService.verificarClave(dto.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Contrasenia incorrecta");
+                String token = jwtService.generateToken(user.getUserName(), user.getIdUser());
+                return AuthResponse.builder()
+                                .token(token)
+                                .userName(user.getUserName())
+                                .idUser(user.getIdUser())
+                                .build();
         }
-
-        String token = jwtService.generateToken(user.getUserName());
-        return AuthResponse.builder()
-                .token(token)
-                .userName(user.getUserName())
-                .build();
-    }
 }

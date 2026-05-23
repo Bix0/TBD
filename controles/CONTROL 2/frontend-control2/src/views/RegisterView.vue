@@ -55,6 +55,7 @@ const handleRegister = async () => {
         );
         localStorage.setItem("token", response.token);
         localStorage.setItem("userName", response.userName);
+        localStorage.setItem("userId", response.idUser);
         router.push("/dashboard");
     } catch (e) {
         if (e.response?.data?.message) {

@@ -24,21 +24,30 @@ const concentrationSectors = ref([])
 
 onMounted(async () => {
   userName.value = localStorage.getItem('userName') || ''
+  const storedUserId = localStorage.getItem('userId')
   if (!localStorage.getItem('token')) {
     router.push('/login')
     return
   }
 
-  // Decodificar el ID de usuario desde el flujo de autenticación o endpoint
-  try {
-    const userRes = await api.get('/users')
-    const currentUser = userRes.data.find(u => u.userName === userName.value)
-    if (currentUser) {
-      userId.value = currentUser.idUser
-      loadReports()
+  if (storedUserId) {
+    userId.value = Number(storedUserId)
+    loadReports()
+  } else {
+    // Decodificar el ID de usuario desde el flujo de autenticación o endpoint
+    try {
+      const userRes = await api.get('/users')
+      if (userRes.data && Array.isArray(userRes.data)) {
+        const currentUser = userRes.data.find(u => u.userName === userName.value)
+        if (currentUser) {
+          userId.value = currentUser.idUser
+          localStorage.setItem('userId', currentUser.idUser)
+          loadReports()
+        }
+      }
+    } catch (e) {
+      console.error("Error al cargar datos del usuario", e)
     }
-  } catch (e) {
-    console.error("Error al cargar datos del usuario", e)
   }
 
   loadTasks()
@@ -116,6 +125,7 @@ const handleCompleteTask = async (idTask) => {
 const handleLogout = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('userName')
+  localStorage.removeItem('userId')
   router.push('/login')
 }
 </script>

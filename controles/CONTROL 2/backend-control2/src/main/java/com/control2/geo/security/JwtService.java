@@ -25,8 +25,9 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(String userName) {
+    public String generateToken(String userName, Long idUser) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("idUser", idUser);
         return buildToken(claims, userName);
     }
 

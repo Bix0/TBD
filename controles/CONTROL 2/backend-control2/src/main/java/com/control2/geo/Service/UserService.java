@@ -27,13 +27,12 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public String createUser(UserRequest dto) {
+    public User createUser(UserRequest dto) {
         User user = new User();
         user.setUserName(dto.getUserName());
         user.setGeoPoint(geoPointService.createGeoPoint(dto.getLocationUser()));
         user.setPassword(bcryptService.encriptarClave(dto.getPassword()));
-        userRepository.save(user);
-        return "Usuario creado exitosamente";
+        return userRepository.save(user);
     }
 
     public String modifyUser(Long id, UserRequest dto) {

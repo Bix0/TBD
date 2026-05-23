@@ -22,6 +22,7 @@ const handleLogin = async () => {
     const response = await authService.login(userName.value, password.value)
     localStorage.setItem('token', response.token)
     localStorage.setItem('userName', response.userName)
+    localStorage.setItem('userId', response.idUser)
     router.push('/dashboard')
   } catch (e) {
     error.value = 'Usuario o contrasenia incorrectos'
