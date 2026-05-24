@@ -3,22 +3,22 @@
         <label>Selecciona tu ubicación en el mapa:</label>
 
         <div class="search-container">
-            <input 
-                v-model="searchQuery" 
-                type="text" 
-                placeholder="Busca una calle, ciudad o lugar..." 
+            <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Busca una calle, ciudad o lugar..."
                 @input="onSearchInput"
                 @keyup.enter="onSearchEnter"
                 @blur="closeSuggestions"
                 autocomplete="off"
             />
             <ul v-if="suggestions.length > 0" class="suggestions-list">
-                <li 
-                    v-for="item in suggestions" 
-                    :key="item.place_id" 
+                <li
+                    v-for="item in suggestions"
+                    :key="item.place_id"
                     @mousedown="selectSuggestion(item)"
                 >
-                    <span class="suggestion-icon">📍</span>
+                    <span class="suggestion-icon"></span>
                     <span class="suggestion-text">{{ item.display_name }}</span>
                 </li>
             </ul>
@@ -40,6 +40,15 @@
 import { ref, onMounted } from "vue";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+//fix del incono de marcador de leaflet transparente
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl:
+        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 // Definimos los "emits" para enviar la coordenada al componente padre (ej: RegisterView)
 const emit = defineEmits(["ubicacion-seleccionada"]);
@@ -63,8 +72,8 @@ const onSearchInput = () => {
             const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery.value)}&limit=5`;
             const response = await fetch(url, {
                 headers: {
-                    "Accept-Language": "es"
-                }
+                    "Accept-Language": "es",
+                },
             });
             const data = await response.json();
             suggestions.value = data || [];
@@ -92,7 +101,7 @@ const selectSuggestion = (item) => {
     // Guardar y emitir coordenadas
     coordenadas.value = { lat, lng };
     emit("ubicacion-seleccionada", coordenadas.value);
-    
+
     // Establecer el valor seleccionado en el buscador y limpiar sugerencias
     searchQuery.value = item.display_name;
     suggestions.value = [];
@@ -115,8 +124,8 @@ const onSearchEnter = async () => {
         const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery.value)}&limit=1`;
         const response = await fetch(url, {
             headers: {
-                "Accept-Language": "es"
-            }
+                "Accept-Language": "es",
+            },
         });
         const data = await response.json();
 
@@ -180,8 +189,11 @@ onMounted(() => {
                 emit("ubicacion-seleccionada", coordenadas.value);
             },
             (err) => {
-                console.warn("Geolocalización denegada o no disponible:", err.message);
-            }
+                console.warn(
+                    "Geolocalización denegada o no disponible:",
+                    err.message,
+                );
+            },
         );
     }
 
@@ -222,7 +234,9 @@ onMounted(() => {
     color: #fff;
     font-size: 0.95rem;
     box-sizing: border-box;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
 }
 .search-container input:focus {
     border-color: #00e676;

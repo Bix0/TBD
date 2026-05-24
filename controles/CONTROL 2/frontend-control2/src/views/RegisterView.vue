@@ -10,6 +10,7 @@ const userName = ref("");
 const password = ref("");
 const confirmPassword = ref("");
 const locationName = ref("");
+const sector = ref("");
 const ubicacionUsuario = ref(null);
 const error = ref("");
 const loading = ref(false);
@@ -51,6 +52,7 @@ const handleRegister = async () => {
                 latitude: ubicacionUsuario.value.lat,
                 longitude: ubicacionUsuario.value.lng,
                 name: locationName.value || "Sin nombre",
+                sector: sector.value,
             },
         );
         localStorage.setItem("token", response.token);
@@ -118,6 +120,16 @@ const handleRegister = async () => {
                         v-model="locationName"
                         type="text"
                         placeholder="ej: Casa, Trabajo, etc."
+                    />
+                </div>
+
+                <div class="field">
+                    <label for="sector">Sector / Zona</label>
+                    <input
+                        id="sector"
+                        v-model="sector"
+                        type="text"
+                        placeholder="ej: Norte, Centro, Sur, Providencia..."
                     />
                 </div>
 
