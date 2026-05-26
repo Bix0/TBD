@@ -1,10 +1,20 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, nextTick } from "vue";
 import TaskCard from "../components/TaskCard.vue";
 import ReportCard from "../components/ReportCard.vue";
 import GeoPointManager from "../components/GeoPointManager.vue";
 import { useRouter } from "vue-router";
 import api from "../services/api.js";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix del ícono de marcador de leaflet transparente
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 const router = useRouter();
 const userName = ref("");
@@ -35,6 +45,11 @@ const topSectorRadius = ref(5);
 const userSectorCounts = ref([]);
 const showGeoManager = ref(false);
 
+// --- ESTADOS Y LÓGICA PARA EL MODAL DEL MAPA ---
+const showMapModal = ref(false);
+const selectedMapTask = ref(null);
+let viewMapInstance = null;
+
 onMounted(async () => {
     userName.value = localStorage.getItem("userName") || "";
     const storedUserId = localStorage.getItem("userId");
@@ -47,7 +62,6 @@ onMounted(async () => {
         userId.value = Number(storedUserId);
         loadReports();
     } else {
-        // Decodificar el ID de usuario desde el flujo de autenticación o endpoint
         try {
             const userRes = await api.get("/users");
             if (userRes.data && Array.isArray(userRes.data)) {
@@ -120,7 +134,6 @@ const loadReports = async () => {
         );
         concentrationSectors.value = concentration.data || [];
 
-        // Nuevos reportes
         loadTopSector();
         loadUserSectorCounts();
     } catch (e) {
@@ -199,6 +212,47 @@ const handleDeleteTask = async (idTask) => {
     }
 };
 
+// --- FUNCIONES DEL MODAL DEL MAPA ---
+const handleViewMap = async (task) => {
+    if (!task.geoPoint || task.geoPoint.latitude == null || task.geoPoint.longitude == null) {
+        alert("Esta tarea no tiene coordenadas geográficas registradas válidas.");
+        return;
+    }
+
+    selectedMapTask.value = task;
+    showMapModal.value = true; // Abre el modal
+
+    // nextTick permite que Vue renderice el <div id="task-map-container"> antes de inyectar Leaflet
+    await nextTick();
+
+    const latLng = [task.geoPoint.latitude, task.geoPoint.longitude];
+
+    // Inicializamos el mapa en el contenedor del modal
+    viewMapInstance = L.map("task-map-container").setView(latLng, 16);
+    
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(viewMapInstance);
+
+    L.marker(latLng).addTo(viewMapInstance);
+
+    // InvalidateSize asegura que los tiles del mapa carguen correctamente al abrirse dentro de un Modal
+    setTimeout(() => {
+        if(viewMapInstance) viewMapInstance.invalidateSize();
+    }, 150);
+};
+
+const closeMapModal = () => {
+    showMapModal.value = false;
+    selectedMapTask.value = null;
+    
+    // Es vital destruir la instancia al cerrar para evitar el error "Map container is already initialized"
+    if (viewMapInstance) {
+        viewMapInstance.remove();
+        viewMapInstance = null;
+    }
+};
+
 const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
@@ -209,6 +263,18 @@ const handleLogout = () => {
 
 <template>
     <div class="dashboard">
+
+        <div v-if="showMapModal" class="modal-overlay" @click.self="closeMapModal">
+            <div class="modal-content">
+                <h3>Ubicación: {{ selectedMapTask?.title }}</h3>
+                <p style="margin-bottom: 12px; color: var(--text-h)">
+                    📍 Sector: {{ selectedMapTask?.geoPoint?.sector || 'Sin sector' }}
+                </p>
+                <div id="task-map-container" style="height: 350px; width: 100%; border-radius: 8px; z-index: 1;"></div>
+                <button class="primary-btn close-btn" @click="closeMapModal">Cerrar Mapa</button>
+            </div>
+        </div>
+
         <header class="dash-header">
             <h1>Bienvenido, {{ userName }}</h1>
             <button class="logout-btn" @click="handleLogout">
@@ -216,7 +282,6 @@ const handleLogout = () => {
             </button>
         </header>
 
-        <!-- Barra Alertas Vencimiento Corto -->
         <div v-if="alerts.length > 0" class="alerts-banner">
             <p>
                 <strong>Tareas Proximas a vencer (Proximas 24 horas):</strong>
@@ -229,7 +294,6 @@ const handleLogout = () => {
         </div>
 
         <main class="dash-grid">
-            <!-- Sección Izquierda: Gestión y Listado -->
             <section class="tasks-section">
                 <div class="card">
                     <h2>Crear Nueva Tarea</h2>
@@ -265,7 +329,6 @@ const handleLogout = () => {
                     </form>
                 </div>
 
-                <!-- Pestañas: Tareas / Ubicaciones -->
                 <div class="section-tabs">
                     <button
                         :class="{ 'tab-active': !showGeoManager }"
@@ -281,7 +344,6 @@ const handleLogout = () => {
                     </button>
                 </div>
 
-                <!-- Vista de Tareas -->
                 <div v-if="!showGeoManager" class="card tasks-list-card">
                     <div class="filters-bar">
                         <h2>Listado de Tareas</h2>
@@ -312,11 +374,11 @@ const handleLogout = () => {
                             @save-edit="handleSaveEdit"
                             @delete-task="handleDeleteTask"
                             @complete-task="handleCompleteTask"
+                            @view-map="handleViewMap"
                         />
                     </ul>
                 </div>
 
-                <!-- Vista de Ubicaciones -->
                 <GeoPointManager
                     v-if="showGeoManager"
                     :user-id="userId"
@@ -324,7 +386,6 @@ const handleLogout = () => {
                 />
             </section>
 
-            <!-- Sección Derecha: Reportes de Consultas PostGIS -->
             <section class="reports-section">
                 <ReportCard
                     title="Tarea mas Cercana Pendiente"
@@ -419,6 +480,42 @@ const handleLogout = () => {
 </template>
 
 <style scoped>
+/* ESTILOS DEL MODAL DE MAPA */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+.modal-content {
+    background: var(--code-bg);
+    padding: 24px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+.modal-content h3 {
+    margin: 0 0 4px 0;
+    color: var(--accent);
+}
+.close-btn {
+    margin-top: 16px;
+    width: 100%;
+    background: #ff5252;
+}
+.close-btn:hover {
+    background: #ff1744;
+}
+
+/* ESTILOS GENERALES MANTENIDOS */
 .dashboard {
     min-height: 100vh;
     background: var(--bg);
@@ -577,7 +674,6 @@ const handleLogout = () => {
     border-radius: 8px;
     overflow: hidden;
 }
-
 .section-tabs button {
     flex: 1;
     padding: 10px 16px;
@@ -589,11 +685,9 @@ const handleLogout = () => {
     cursor: pointer;
     transition: all 0.2s;
 }
-
 .section-tabs button:not(:last-child) {
     border-right: 1px solid var(--border);
 }
-
 .section-tabs button.tab-active {
     background: var(--accent);
     color: white;

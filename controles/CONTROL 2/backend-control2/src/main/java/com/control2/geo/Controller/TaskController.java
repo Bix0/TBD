@@ -32,16 +32,23 @@ public class TaskController {
 
     private final TaskService taskService;
 
+    // MÉTODO AUXILIAR CORREGIDO: Accede directamente a user.getUser().getIdUser()
+    private boolean isNotAuthorized(UserPrincipal user, Long targetUserId) {
+        if (user == null || user.getUser() == null || user.getUser().getIdUser() == null || targetUserId == null) {
+            return true;
+        }
+        // Comparación segura entre Long y Long
+        return !user.getUser().getIdUser().equals(targetUserId);
+    }
+
     @GetMapping("/tasks")
     public ResponseEntity<List<Task>> getAllTasks(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String keyword) {
         List<Task> tasks = taskService.getAllTasks(status, keyword);
         if (tasks.isEmpty()) {
-            // Return 204 No Content if the list of tasks is empty
             return ResponseEntity.noContent().build();
         }
-        // Return 200 OK with the list of tasks
         return ResponseEntity.ok(tasks);
     }
 
@@ -49,17 +56,15 @@ public class TaskController {
     public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
         Task task = taskService.getTaskById(id);
         if (task == null) {
-            // Return 404 Not Found if the task is not found
             return ResponseEntity.notFound().build();
         }
-        // Return 200 OK with the task
         return ResponseEntity.ok(task);
     }
 
     @PostMapping("/tasks/createtask/{userId}")
     public ResponseEntity<String> createTask(@PathVariable Long userId, @RequestBody TaskRequest task,
-            @AuthenticationPrincipal UserPrincipal authenticatedUser) {
-        if (!authenticatedUser.getId().equals(userId)) {
+                                             @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        if (isNotAuthorized(authenticatedUser, userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para crear una tarea.");
         }
         return ResponseEntity.ok(taskService.createTask(task));
@@ -68,14 +73,13 @@ public class TaskController {
     @PutMapping("/tasks/modifytask/{idTask}")
     public ResponseEntity<String> modifyTask(@PathVariable Long idTask, @RequestBody TaskRequest task,
                                              @AuthenticationPrincipal UserPrincipal authenticatedUser) {
-        //Se elimina la comparación errónea entre el ID de usuario y el ID de tarea.
         return ResponseEntity.ok(taskService.modifyTask(idTask, task));
     }
 
     @DeleteMapping("/tasks/deletetask/{idTask}/{userId}")
     public ResponseEntity<String> deleteTask(@PathVariable Long idTask, @PathVariable Long userId,
-            @AuthenticationPrincipal UserPrincipal authenticatedUser) {
-        if (!authenticatedUser.getId().equals(userId)) {
+                                             @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        if (isNotAuthorized(authenticatedUser, userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para eliminar una tarea.");
         }
         return ResponseEntity.ok(taskService.deleteTask(idTask));
@@ -84,19 +88,16 @@ public class TaskController {
     @PutMapping("/tasks/completeTask/{idTask}/{userId}")
     public ResponseEntity<String> completeTask(@PathVariable Long idTask, @PathVariable Long userId,
                                                @AuthenticationPrincipal UserPrincipal authenticatedUser) {
-        //Verifica que el usuario que inició sesión sea el mismo que intenta completar la tarea.
-        if (!authenticatedUser.getId().equals(userId)) {
+        if (isNotAuthorized(authenticatedUser, userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para completar esta tarea.");
         }
-
-        //Asegurar orden (idTask, userId) que espera la firma del método en TaskService.
         return ResponseEntity.ok(taskService.changeTaskStatus(idTask, userId));
     }
 
     @GetMapping("/tasks/reports/closest-pending/{userId}")
     public ResponseEntity<Task> getClosestPendingTask(@PathVariable Long userId,
-            @AuthenticationPrincipal UserPrincipal authenticatedUser) {
-        if (!authenticatedUser.getId().equals(userId)) {
+                                                      @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        if (isNotAuthorized(authenticatedUser, userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Task task = taskService.getClosestPendingTask(userId);
@@ -111,7 +112,7 @@ public class TaskController {
             @PathVariable Long userId,
             @PathVariable double radiusInKm,
             @AuthenticationPrincipal UserPrincipal authenticatedUser) {
-        if (!authenticatedUser.getId().equals(userId)) {
+        if (isNotAuthorized(authenticatedUser, userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         java.util.Map<String, Object> result = taskService.getSectorWithMostCompletedTasksWithinRadius(userId,
@@ -124,8 +125,8 @@ public class TaskController {
 
     @GetMapping("/tasks/reports/average-distance/{userId}")
     public ResponseEntity<Double> getAverageDistanceOfCompletedTasks(@PathVariable Long userId,
-            @AuthenticationPrincipal UserPrincipal authenticatedUser) {
-        if (!authenticatedUser.getId().equals(userId)) {
+                                                                     @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        if (isNotAuthorized(authenticatedUser, userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         Double avgDistance = taskService.getAverageDistanceOfCompletedTasks(userId);
@@ -152,8 +153,8 @@ public class TaskController {
 
     @GetMapping("/tasks/reports/user-sector-counts/{userId}")
     public ResponseEntity<List<Map<String, Object>>> getTasksCountByUserAndSector(@PathVariable Long userId,
-            @AuthenticationPrincipal UserPrincipal authenticatedUser) {
-        if (!authenticatedUser.getId().equals(userId)) {
+                                                                                  @AuthenticationPrincipal UserPrincipal authenticatedUser) {
+        if (isNotAuthorized(authenticatedUser, userId)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         List<Map<String, Object>> result = taskService.getTasksCountByUserAndSector(userId);
