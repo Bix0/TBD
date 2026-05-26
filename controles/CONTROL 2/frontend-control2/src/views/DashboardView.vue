@@ -401,7 +401,7 @@ const handleLogout = () => {
                     </p>
                 </ReportCard>
 
-                <ReportCard title="Tus Tareas por Sector">
+                <ReportCard title="Tus Tareas completadas por Sector">
                     <div v-if="userSectorCounts.length > 0">
                         <ul>
                             <li
