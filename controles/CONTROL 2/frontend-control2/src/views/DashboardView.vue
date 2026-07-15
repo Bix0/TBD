@@ -167,23 +167,23 @@ const loadUserSectorCounts = async () => {
     }
 };
 
-const handleCreateTask = async () => {
-    if (!newTask.value.title || !newTask.value.idGeoPoint) return;
-    try {
-        if (
-            newTask.value.dueDate &&
-            newTask.value.dueDate < new Date().toISOString().split("T")[0]
-        ) {
-            alert("La fecha de vencimiento no puede ser anterior a la de hoy");
-            return;
-        }
-        await api.post(`/tasks/createtask/${userId.value}`, newTask.value);
-        newTask.value = {
-            title: "",
-            description: "",
-            dueDate: "",
-            idGeoPoint: null,
-        };
+	const handleCreateTask = async () => {
+	    if (!newTask.value.title || !newTask.value.idGeoPoint) return;
+	    try {
+	        if (
+	            newTask.value.dueDate &&
+	            newTask.value.dueDate < new Date().toISOString().split("T")[0]
+	        ) {
+	            alert("La fecha de vencimiento no puede ser anterior a la de hoy");
+	            return;
+	        }
+	        await api.post(`/tasks/createtask/${userId.value}`, newTask.value);
+	        newTask.value = {
+	            title: "",
+	            description: "",
+	            dueDate: "",
+	            idGeoPoint: null,
+	        };
         loadTasks();
         loadReports();
     } catch (e) {
@@ -338,12 +338,12 @@ const handleLogout = () => {
                             type="text"
                             placeholder="Descripción"
                         />
-                        <input
-                            v-model="newTask.dueDate"
-                            type="date"
-                            :min="today"
-                            required
-                        />
+        		                <input
+        		                    v-model="newTask.dueDate"
+        		                    type="date"
+        		                    :min="today"
+        		                    required
+        		                />
 
                         <select v-model="newTask.idGeoPoint" required>
                             <option :value="null" disabled selected>

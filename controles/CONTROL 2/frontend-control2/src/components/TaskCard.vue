@@ -29,30 +29,27 @@ const formatForDisplay = (isoString) => {
     return isoString.split("T")[0];
 };
 
-const startEditing = () => {
-    editForm.value = {
-        title: props.task.title,
-        description: props.task.description,
-        // Usamos el limpiador aquí para que el <input type="date"> no se bugee y muestre la fecha actual
-        dueDate: props.task.dueDate ? props.task.dueDate.split("T")[0] : "",
-        idGeoPoint: props.task.geoPoint?.idGeoPoint || null,
-    };
-    isEditing.value = true;
-};
+	const startEditing = () => {
+	    let dueDate = props.task.dueDate ? props.task.dueDate.split("T")[0] : "";
+	    editForm.value = {
+	        title: props.task.title,
+	        description: props.task.description,
+	        dueDate: dueDate,
+	        idGeoPoint: props.task.geoPoint?.idGeoPoint || null,
+	    };
+	    isEditing.value = true;
+	};
 
 const cancelEditing = () => {
     isEditing.value = false;
 };
 
-const saveEdit = () => {
-    if (!editForm.value.title || !editForm.value.idGeoPoint) return;
-    if (editForm.value.dueDate && editForm.value.dueDate < today) {
-        alert("La fecha de vencimiento no puede ser anterior a la de hoy");
-        return;
-    }
-    emit("save-edit", props.task.idTask, { ...editForm.value });
-    isEditing.value = false;
-};
+	const saveEdit = () => {
+	    if (!editForm.value.title || !editForm.value.idGeoPoint) return;
+	    const payload = { ...editForm.value };
+	    emit("save-edit", props.task.idTask, payload);
+	    isEditing.value = false;
+	};
 
 const confirmDelete = () => {
     if (confirm("¿Estas seguro de eliminar esta tarea?")) {
@@ -87,12 +84,11 @@ const viewMap = () => {
                 placeholder="Descripcion"
             />
 
-            <input
-                v-model="editForm.dueDate"
-                type="date"
-                :min="today"
-                required
-            />
+		                <input
+		                    v-model="editForm.dueDate"
+		                    type="date"
+		                    required
+		                />
 
             <select v-model="editForm.idGeoPoint" required>
                 <option :value="null" disabled>

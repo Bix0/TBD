@@ -25,7 +25,7 @@ const handleLogin = async () => {
     localStorage.setItem('userId', response.idUser)
     router.push('/dashboard')
   } catch (e) {
-    error.value = 'Usuario o contrasenia incorrectos'
+    error.value = 'Usuario o contraseña incorrectos'
   } finally {
     loading.value = false
   }
@@ -51,12 +51,12 @@ const handleLogin = async () => {
         </div>
 
         <div class="field">
-          <label for="password">Contrasenia</label>
+          <label for="password">Contraseña</label>
           <input
             id="password"
             v-model="password"
             type="password"
-            placeholder="tu contrasenia"
+            placeholder="tu contraseña"
             autocomplete="current-password"
           />
         </div>
