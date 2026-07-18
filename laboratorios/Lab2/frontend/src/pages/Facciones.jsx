@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api'; // Interceptor para peticiones seguras
 import Navbar from '../components/Navbar';
 
 function Facciones() {
@@ -8,19 +8,17 @@ function Facciones() {
   const [auditoria, setAuditoria] = useState([]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const configSeguridad = { headers: { Authorization: `Bearer ${token}` } };
-
-    axios.get('http://localhost:8080/api/personajes', configSeguridad)
+    // Usamos el interceptor, no hace falta declarar el token manualmente
+    api.get('/api/personajes')
       .then(response => {
-        const todos = response.data.sort((a, b) => (b.puntos_merito || 0) - (a.puntos_merito || 0));
+        const todos = response.data.sort((a, b) => (b.puntos_merito || b.puntosMerito || 0) - (a.puntos_merito || a.puntosMerito || 0));
         setAlianza(todos.filter(p => p.faccion === 'Alianza'));
         setHorda(todos.filter(p => p.faccion === 'Horda'));
       })
       .catch(error => console.error("Error:", error));
 
     // Cargar Auditoria (Trigger 2)
-    axios.get('http://localhost:8080/api/clanes/auditoria', configSeguridad)
+    api.get('/api/clanes/auditoria')
       .then(res => setAuditoria(res.data))
       .catch(err => console.error(err));
   }, []);
@@ -29,9 +27,10 @@ function Facciones() {
     <div style={{ flex: 1, backgroundColor: '#1a1a1a', borderRadius: '8px', border: `1px solid ${color}`, overflow: 'hidden' }}>
       <h2 style={{ textAlign: 'center', backgroundColor: color, color: '#fff', margin: 0, padding: '15px' }}>{titulo}</h2>
       {faccionData.map((p, i) => (
-        <div key={p.id_personaje} style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', borderBottom: '1px solid #333' }}>
+        // Se añade soporte para ambos formatos de ID para evitar el error de keys nulos
+        <div key={p.id_personaje || p.idPersonaje || i} style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', borderBottom: '1px solid #333' }}>
           <span style={{ fontWeight: 'bold', color: '#fff' }}>{i + 1}. {p.nombre} {i === 0 && '👑 (Líder)'}</span>
-          <span style={{ color: '#ff9800', fontWeight: 'bold' }}>{p.puntos_merito || 0} DKP</span>
+          <span style={{ color: '#ff9800', fontWeight: 'bold' }}>{p.puntos_merito || p.puntosMerito || 0} DKP</span>
         </div>
       ))}
     </div>
@@ -56,7 +55,7 @@ function Facciones() {
           <div style={{ backgroundColor: '#242424', padding: '15px', borderRadius: '6px' }}>
             {auditoria.length === 0 ? <p style={{ fontSize: '14px', color: '#888' }}>Ningún rey ha sido destronado todavía.</p> : null}
             {auditoria.map((fila, i) => (
-               <div key={i} style={{ padding: '10px 0', borderBottom: '1px dotted #444', fontSize: '14px' }}>
+               <div key={`auditoria-${i}`} style={{ padding: '10px 0', borderBottom: '1px dotted #444', fontSize: '14px' }}>
                  <span style={{ color: '#888' }}>[{new Date(fila[4]).toLocaleString()}]</span> El trono de <strong style={{color:'#61dafb'}}>{fila[1]}</strong> pasó de <strong>{fila[2]}</strong> a manos de <strong>{fila[3]}</strong>.
                </div>
             ))}

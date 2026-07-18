@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+// IMPORT VITAL PARA POSTGIS
+import org.locationtech.jts.geom.Point;
+
 /**
  * Entidad que representa una Raid (evento de grupo)
  * Mapea a la tabla: Raid
@@ -45,4 +48,8 @@ public class Raid {
 
     @Column(nullable = false)
     private Integer cuposDps;
+
+    // --- NUEVO REQUERIMIENTO POSTGIS (LAB 2) ---
+    @Column(name = "ubicacion_boss", columnDefinition = "geometry(Point, 4326)")
+    private Point ubicacionBoss;
 }

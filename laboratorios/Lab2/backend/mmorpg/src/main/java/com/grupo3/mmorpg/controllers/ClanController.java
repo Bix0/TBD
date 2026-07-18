@@ -2,6 +2,8 @@ package com.grupo3.mmorpg.controllers;
 
 import com.grupo3.mmorpg.models.Clan;
 import com.grupo3.mmorpg.services.ClanService;
+import com.grupo3.mmorpg.repositories.ClanRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,10 @@ import java.util.List;
 public class ClanController {
 
     private final ClanService clanService;
+
+    // Inyectamos el repositorio solo para la consulta geoespacial rápida
+    @Autowired
+    private ClanRepository clanRepository;
 
     public ClanController(ClanService clanService) {
         this.clanService = clanService;
@@ -150,8 +156,29 @@ public class ClanController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
     @GetMapping("/auditoria")
     public ResponseEntity<List<Object[]>> obtenerAuditoriaLiderazgo() {
         return ResponseEntity.ok(clanService.obtenerAuditoriaLiderazgo());
+    }
+
+    // --- NUEVO ENDPOINT GEOESPACIAL (LAB 2) ---
+    @GetMapping("/cercanos")
+    public ResponseEntity<List<Clan>> getClanesCercanos(
+            @RequestParam double lon,
+            @RequestParam double lat,
+            @RequestParam(defaultValue = "5000") double distancia) {
+
+        List<Clan> clanesCercanos = clanRepository.findClanesCercanos(lon, lat, distancia);
+        if (clanesCercanos.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(clanesCercanos);
+    }
+
+    // --- ENDPOINT MAPA DE CALOR (LAB 2) ---
+    @GetMapping("/mapa-calor")
+    public ResponseEntity<List<Object[]>> getMapaCalor() {
+        return ResponseEntity.ok(clanRepository.obtenerMapaCalorClanes());
     }
 }

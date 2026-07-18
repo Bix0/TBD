@@ -55,8 +55,8 @@ public interface RaidRepository extends JpaRepository<Raid, Long> {
     int desinscribirPersonaje(@Param("idRaid") Long idRaid, @Param("idPersonaje") Long idPersonaje);
 
     @Query(value = "SELECT ir.id_inscripcion, ir.id_personaje, p.nombre, p.clase, ir.estado, ir.asistio " +
-                   "FROM Inscripcion_Raid ir JOIN Personaje p ON ir.id_personaje = p.id_personaje " +
-                   "WHERE ir.id_raid = :idRaid ORDER BY ir.id_inscripcion", nativeQuery = true)
+            "FROM Inscripcion_Raid ir JOIN Personaje p ON ir.id_personaje = p.id_personaje " +
+            "WHERE ir.id_raid = :idRaid ORDER BY ir.id_inscripcion", nativeQuery = true)
     List<Object[]> getInscripcionesRaid(@Param("idRaid") Long idRaid);
 
     @Query(value = "SELECT COUNT(*) FROM Inscripcion_Raid WHERE id_raid = :idRaid AND id_personaje = :idPersonaje", nativeQuery = true)
@@ -68,4 +68,8 @@ public interface RaidRepository extends JpaRepository<Raid, Long> {
     @Modifying
     @Query("UPDATE Raid r SET r.estado = :estado WHERE r.idRaid = :idRaid")
     int updateEstado(@Param("idRaid") Long idRaid, @Param("estado") String estado);
+
+    // --- NUEVA LÓGICA GEOESPACIAL (LAB 2) ---
+    @Query(value = "SELECT * FROM Raid r WHERE r.ubicacion_boss IS NOT NULL AND ST_DWithin(r.ubicacion_boss, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :distancia)", nativeQuery = true)
+    List<Raid> findRaidsCercanas(@Param("lon") double lon, @Param("lat") double lat, @Param("distancia") double distancia);
 }

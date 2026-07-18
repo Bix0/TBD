@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import RaidFilterBar from '../components/RaidFilterBar';
 import Navbar from '../components/Navbar';
+import MapaRaids from '../components/MapaRaids'; // Importamos el Mapa
 
 function Raids() {
   const [Rolfiltro, setRolfiltro] = useState('Todos');
@@ -23,7 +24,6 @@ function Raids() {
       axios.get(`http://localhost:8080/api/personajes/${activeId}`, configSeguridad)
         .then(res => setMiPersonaje(res.data))
         .catch((err) => {
-          
           if(err.response?.status === 404) {
             localStorage.removeItem('activePersonajeId');
           }
@@ -88,10 +88,20 @@ function Raids() {
           )}
         </div>
 
+        {/* ========================================= */}
+        {/* --- MAPA GEOESPACIAL DE RAIDS (LAB 2) --- */}
+        {/* ========================================= */}
+        <div style={{ backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', border: '1px solid #61dafb', marginBottom: '30px' }}>
+          <h2 style={{ color: '#61dafb', marginTop: 0 }}>🗺️ Radar de Raids Cercanas</h2>
+          <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '15px' }}>
+            Explora el mapa para encontrar los Jefes (Bosses) que han aparecido cerca de tu ubicación.
+          </p>
+          <MapaRaids />
+        </div>
+
         <RaidFilterBar rolFiltro={Rolfiltro} setRolFiltro={setRolfiltro} ilvlFiltro={Ilvfiltro} setIlvlFiltro={setIlvfiltro} />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', marginTop: '30px' }}>
- 
           {raids.filter(r => (r.estado === 'Programada' && r.item_level_requerido >= Ilvfiltro && (Rolfiltro === 'Todos' || r[`cupos_${Rolfiltro.toLowerCase()}`] > 0))).map(raid => {
             
             const listadoInscritos = inscritos[raid.id_raid] || [];

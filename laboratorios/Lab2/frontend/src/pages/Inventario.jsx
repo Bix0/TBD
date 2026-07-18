@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api'; // Usamos tu interceptor para evitar el Error 403
 import Navbar from '../components/Navbar';
 
 function Inventario() {
@@ -7,14 +7,12 @@ function Inventario() {
   const [catalogo, setCatalogo] = useState([]);
   
   const idPersonajeActivo = localStorage.getItem('activePersonajeId');
-  const token = localStorage.getItem('token');
-  const configSeguridad = { headers: { Authorization: `Bearer ${token}` } };
 
   const cargarDatos = async () => {
     if (!idPersonajeActivo || idPersonajeActivo === "null") return;
     try {
-      const resItems = await axios.get('http://localhost:8080/api/items', configSeguridad);
-      const resInv = await axios.get(`http://localhost:8080/api/personajes/${idPersonajeActivo}/inventario`, configSeguridad);
+      const resItems = await api.get('/api/items');
+      const resInv = await api.get(`/api/personajes/${idPersonajeActivo}/inventario`);
       setCatalogo(resItems.data);
       setItemsInventario(resInv.data);
     } catch (error) {
@@ -26,19 +24,18 @@ function Inventario() {
 
   const manejarEquipar = async (idInventario, estaEquipado) => {
     try {
-      //Si vamos a equipar, primero desequipamos lo que ya este puesto
       if (!estaEquipado) {
         const itemPuesto = itemsInventario.find(i => i.equipado === true);
         if (itemPuesto) {
           const idDesequipar = itemPuesto.id_inventario || itemPuesto.idInventario;
-          await axios.put(`http://localhost:8080/api/personajes/${idPersonajeActivo}/inventario/${idDesequipar}/desequipar`, null, configSeguridad);
+          await api.put(`/api/personajes/${idPersonajeActivo}/inventario/${idDesequipar}/desequipar`);
         }
       }
 
       const accion = estaEquipado ? 'desequipar' : 'equipar';
-      await axios.put(`http://localhost:8080/api/personajes/${idPersonajeActivo}/inventario/${idInventario}/${accion}`, null, configSeguridad);
+      await api.put(`/api/personajes/${idPersonajeActivo}/inventario/${idInventario}/${accion}`);
       
-      cargarDatos(); // Refrescamos la mochila
+      cargarDatos(); 
     } catch (error) {
       alert("Error al intentar equipar el arma.");
     }
@@ -46,7 +43,7 @@ function Inventario() {
 
   const tirarObjeto = (idInventario) => {
     if(window.confirm("¿Seguro que deseas botar este ítem? Se perderá para siempre.")) {
-      axios.delete(`http://localhost:8080/api/personajes/${idPersonajeActivo}/inventario/${idInventario}`, configSeguridad)
+      api.delete(`/api/personajes/${idPersonajeActivo}/inventario/${idInventario}`)
         .then(() => cargarDatos());
     }
   };
@@ -67,11 +64,15 @@ function Inventario() {
               <p style={{ color: '#888' }}>Tu mochila está vacía.</p>
             </div>
           ) : (
-            itemsInventario.map(inv => {
-              const dataItem = catalogo.find(c => c.id_item === inv.id_item) || { nombre: 'Ítem Desconocido', item_lvl: 0, ganancia_dkp: 0 };
+            itemsInventario.map((inv, index) => {
+              // Validamos ambas opciones de escritura para el ID
+              const idItemMochila = inv.id_item || inv.idItem;
+              const idMochila = inv.id_inventario || inv.idInventario || index; 
+              
+              const dataItem = catalogo.find(c => (c.id_item || c.idItem) === idItemMochila) || { nombre: 'Ítem Desconocido', item_lvl: 0, ganancia_dkp: 0 };
               
               return (
-                <div key={inv.id_inventario} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', backgroundColor: inv.equipado ? '#1e3320' : '#1a1a1a', border: inv.equipado ? '1px solid #4caf50' : '1px solid #444', borderRadius: '8px' }}>
+                <div key={idMochila} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', backgroundColor: inv.equipado ? '#1e3320' : '#1a1a1a', border: inv.equipado ? '1px solid #4caf50' : '1px solid #444', borderRadius: '8px' }}>
                   <div>
                     <h3 style={{ margin: '0 0 8px 0', color: inv.equipado ? '#81c784' : '#fff' }}>{dataItem.nombre} {inv.equipado && "(Equipado)"}</h3>
                     <div style={{ display: 'flex', gap: '15px' }}>
@@ -81,10 +82,10 @@ function Inventario() {
                   </div>
                   
                   <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => manejarEquipar(inv.id_inventario, inv.equipado)} style={{ padding: '10px 20px', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: inv.equipado ? '#f44336' : '#4caf50' }}>
+                    <button onClick={() => manejarEquipar((inv.id_inventario || inv.idInventario), inv.equipado)} style={{ padding: '10px 20px', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: inv.equipado ? '#f44336' : '#4caf50' }}>
                       {inv.equipado ? 'Desequipar' : 'Equipar'}
                     </button>
-                    <button onClick={() => tirarObjeto(inv.id_inventario)} style={{ padding: '10px', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: '#555' }}>🗑️ Botar</button>
+                    <button onClick={() => tirarObjeto(inv.id_inventario || inv.idInventario)} style={{ padding: '10px', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', backgroundColor: '#555' }}>🗑️ Botar</button>
                   </div>
                 </div>
               );

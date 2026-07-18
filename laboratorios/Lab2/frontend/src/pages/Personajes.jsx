@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api'; // Importamos tu nuevo interceptor limpio
 import Navbar from '../components/Navbar';
 
 function Personajes() {
     const [personajes, setPersonajes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [formData, setFormData] = useState({ nombre: '', clase: 'Guerrero', faccion: 'Alianza', rol_clan: 'DPS' });
+    
+    // Cambiamos 'rol_clan' a 'rolClan' para coincidir con tu backend
+    const [formData, setFormData] = useState({ nombre: '', clase: 'Guerrero', faccion: 'Alianza', rolClan: 'DPS' });
 
     const userId = localStorage.getItem('userId');
-    const token = localStorage.getItem('token');
-    const configSeguridad = { headers: { Authorization: `Bearer ${token}` } };
     const [activoId, setActivoId] = useState(localStorage.getItem('activePersonajeId'));
 
     const cargarPersonajes = () => {
         setLoading(true);
-        axios.get(`http://localhost:8080/api/personajes/jugador/${userId}/todos`, configSeguridad)
+        // Usamos 'api' en lugar de 'axios', ya no necesitamos configSeguridad ni la URL completa
+        api.get(`/api/personajes/jugador/${userId}/todos`)
             .then(res => setPersonajes(res.data))
             .catch(() => setPersonajes([]))
             .finally(() => setLoading(false));
@@ -26,23 +27,43 @@ function Personajes() {
 
     const crearPersonaje = (e) => {
         e.preventDefault();
+        
+        // CORRECCIÓN CLAVE: Nombres exactos a tu Personaje.java (camelCase)
         const nuevoPersonaje = {
-            id_jugador: parseInt(userId), id_clan: 1, nombre: formData.nombre,
-            clase: formData.clase, faccion: formData.faccion, rol_clan: formData.rol_clan,
-            nivel: 1, item_level: 10, puntos_merito: 0
+            // Nota: Spring Boot suele esperar objetos anidados para las relaciones @ManyToOne
+            jugador: { idJugador: parseInt(userId) }, 
+            clan: { idClan: 1 }, // Asumiendo que 1 es un clan por defecto válido
+            nombre: formData.nombre,
+            clase: formData.clase, 
+            faccion: formData.faccion, 
+            rolClan: formData.rolClan, 
+            nivel: 1, 
+            itemLevel: 10, 
+            puntosMerito: 0
         };
-        axios.post('http://localhost:8080/api/personajes', nuevoPersonaje, configSeguridad)
-            .then(() => { alert("Personaje forjado con éxito."); cargarPersonajes(); })
-            .catch(() => alert("Error al crear. Es probable que el nombre ya esté en uso."));
+
+        api.post('/api/personajes', nuevoPersonaje)
+            .then((res) => { 
+                alert("Personaje forjado con éxito."); 
+                cargarPersonajes(); 
+                // Selecciona automáticamente el personaje si el backend devuelve el ID
+                if(res.data && res.data.idPersonaje) {
+                    seleccionarActivo(res.data.idPersonaje);
+                }
+            })
+            .catch((err) => {
+                console.error("Error al crear:", err.response?.data);
+                alert("Error al crear. Verifica la consola para más detalles.");
+            });
     };
 
     const subirNivel = (personaje) => {
         const personajeActualizado = { 
             ...personaje, 
             nivel: personaje.nivel + 1,
-            item_level: personaje.item_level + 1 
+            itemLevel: personaje.itemLevel + 1 // camelCase
         };
-        axios.put(`http://localhost:8080/api/personajes/${personaje.id_personaje}`, personajeActualizado, configSeguridad)
+        api.put(`/api/personajes/${personaje.idPersonaje}`, personajeActualizado)
             .then(() => cargarPersonajes())
             .catch(() => alert("Error al actualizar personaje."));
     };
@@ -52,18 +73,21 @@ function Personajes() {
         const personajeActualizado = { 
             ...personaje, 
             nivel: personaje.nivel - 1,
-            item_level: personaje.item_level - 1 
+            itemLevel: personaje.itemLevel - 1 // camelCase
         };
-        axios.put(`http://localhost:8080/api/personajes/${personaje.id_personaje}`, personajeActualizado, configSeguridad)
+        api.put(`/api/personajes/${personaje.idPersonaje}`, personajeActualizado)
             .then(() => cargarPersonajes())
             .catch(() => alert("Error al actualizar personaje."));
     };
 
     const borrarPersonaje = (id) => {
         if(window.confirm("¿Estás seguro? Se borrará su inventario y progreso para siempre.")){
-            axios.delete(`http://localhost:8080/api/personajes/${id}`, configSeguridad)
+            api.delete(`/api/personajes/${id}`)
                 .then(() => {
-                    if (activoId == id) { localStorage.removeItem('activePersonajeId'); setActivoId(null); }
+                    if (activoId == id) { 
+                        localStorage.removeItem('activePersonajeId'); 
+                        setActivoId(null); 
+                    }
                     cargarPersonajes();
                 }).catch(() => alert("Error al borrar."));
         }
@@ -85,15 +109,16 @@ function Personajes() {
                         {personajes.length === 0 && <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#888' }}>Aún no has creado ningún personaje.</p>}
                         
                         {personajes.map(p => (
-                            <div key={p.id_personaje} style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', border: activoId == p.id_personaje ? '2px solid #ff9800' : '1px solid #444', textAlign: 'center' }}>
-                                {activoId == p.id_personaje && <div style={{ color: '#ff9800', fontWeight: 'bold', marginBottom: '10px' }}>⭐ ACTIVO</div>}
+                            /* Cambiamos id_personaje por idPersonaje en todo el mapeo */
+                            <div key={p.idPersonaje} style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', border: activoId == p.idPersonaje ? '2px solid #ff9800' : '1px solid #444', textAlign: 'center' }}>
+                                {activoId == p.idPersonaje && <div style={{ color: '#ff9800', fontWeight: 'bold', marginBottom: '10px' }}>⭐ ACTIVO</div>}
                                 <h2 style={{ color: '#81c784', margin: '0 0 5px 0' }}>{p.nombre}</h2>
                                 <p style={{ color: '#aaa', margin: '0 0 5px 0' }}>{p.clase} | {p.faccion}</p>
-                                <p style={{ color: '#61dafb', margin: '0 0 15px 0' }}>Nivel: {p.nivel} | Rol: {p.rol_clan}</p>
+                                <p style={{ color: '#61dafb', margin: '0 0 15px 0' }}>Nivel: {p.nivel} | Rol: {p.rolClan}</p>
                                 
                                 <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                                    <button onClick={() => seleccionarActivo(p.id_personaje)} style={{ flex: '1 1 45%', padding: '8px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Usar</button>
-                                    <button onClick={() => borrarPersonaje(p.id_personaje)} style={{ flex: '1 1 45%', padding: '8px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Borrar</button>
+                                    <button onClick={() => seleccionarActivo(p.idPersonaje)} style={{ flex: '1 1 45%', padding: '8px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Usar</button>
+                                    <button onClick={() => borrarPersonaje(p.idPersonaje)} style={{ flex: '1 1 45%', padding: '8px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Borrar</button>
                                     <button onClick={() => subirNivel(p)} style={{ flex: '1 1 45%', padding: '8px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>+1 Nivel</button>
                                     <button onClick={() => bajarNivel(p)} style={{ flex: '1 1 45%', padding: '8px', backgroundColor: '#ff9800', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>-1 Nivel</button>
                                 </div>
@@ -131,7 +156,7 @@ function Personajes() {
 
                         <div style={{ flex: '1 1 150px' }}>
                             <label style={{ display: 'block', color: '#aaa', fontSize: '13px', marginBottom: '5px' }}>Rol en Combate</label>
-                            <select name="rol_clan" value={formData.rol_clan} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: 'none', backgroundColor: '#333', color: 'white', boxSizing: 'border-box' }}>
+                            <select name="rolClan" value={formData.rolClan} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: 'none', backgroundColor: '#333', color: 'white', boxSizing: 'border-box' }}>
                                 <option value="DPS"> DPS</option>
                                 <option value="Tanque"> Tanque</option>
                                 <option value="Healer"> Healer</option>

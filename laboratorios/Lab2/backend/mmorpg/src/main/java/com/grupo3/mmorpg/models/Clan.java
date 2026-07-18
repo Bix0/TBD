@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// IMPORT VITAL PARA POSTGIS
+import org.locationtech.jts.geom.Point;
+
 /**
  * Entidad que representa un Clan
  * Mapea a la tabla: Clan
@@ -29,4 +32,8 @@ public class Clan {
 
     @Column(name = "id_lider")
     private Long idLider;
+
+    // --- NUEVO REQUERIMIENTO POSTGIS (LAB 2) ---
+    @Column(columnDefinition = "geometry(Point, 4326)")
+    private Point ubicacion;
 }

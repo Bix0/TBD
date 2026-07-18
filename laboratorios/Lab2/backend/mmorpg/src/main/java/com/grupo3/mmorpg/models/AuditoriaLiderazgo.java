@@ -8,12 +8,12 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
+// 1. AGREGA ESTE IMPORT VITAL PARA POSTGIS:
+import org.locationtech.jts.geom.Point;
+
 /**
  * Entidad que representa la auditoría de cambios de liderazgo en clanes
  * Mapea a la tabla: Auditoria_Liderazgo
- *
- * Nota: En fases posteriores se agregará la columna espacial
- * coordenadas (Point) para el mapa histórico de "Sedes de Poder".
  */
 @Entity
 @Table(name = "Auditoria_Liderazgo")
@@ -43,4 +43,8 @@ public class AuditoriaLiderazgo {
 
     @Column(nullable = false)
     private LocalDateTime fechaCambio;
+
+    // 2. AGREGA ESTE ATRIBUTO PARA EL LABORATORIO 2
+    @Column(name = "ubicacion_suceso", columnDefinition = "geometry(Point, 4326)")
+    private Point ubicacionSuceso;
 }

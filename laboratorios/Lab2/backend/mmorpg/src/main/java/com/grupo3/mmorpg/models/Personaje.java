@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+// IMPORT VITAL PARA POSTGIS
+import org.locationtech.jts.geom.Point;
+
 /**
  * Entidad que representa un Personaje (avatar) del jugador
  * Mapea a la tabla: Personaje
@@ -53,4 +56,11 @@ public class Personaje {
     private Integer puntosMerito = 0;
 
     private String rolClan;
+
+    // --- NUEVO REQUERIMIENTO POSTGIS (LAB 2) ---
+    @Column(name = "ubicacion_actual", columnDefinition = "geometry(Point, 4326)")
+    private Point ubicacionActual;
+
+    @Column(name = "region_mapa")
+    private String regionMapa;
 }

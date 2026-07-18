@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api'; 
 import Navbar from '../components/Navbar';
 
 function PanelAdmin() {
   const rol = localStorage.getItem('rol');
-  const token = localStorage.getItem('token');
-  const configSeguridad = { headers: { Authorization: `Bearer ${token}` } };
 
   const [items, setItems] = useState([]);
   const [personajes, setPersonajes] = useState([]);
@@ -28,21 +26,21 @@ function PanelAdmin() {
 
   const cargarDatosAdmin = async () => {
     try {
-      const resItems = await axios.get('http://localhost:8080/api/items', configSeguridad);
-      const resPjs = await axios.get('http://localhost:8080/api/personajes', configSeguridad);
-      const resRaids = await axios.get('http://localhost:8080/api/raids', configSeguridad);
+      const resItems = await api.get('/api/items');
+      const resPjs = await api.get('/api/personajes');
+      const resRaids = await api.get('/api/raids');
       
-      axios.get('http://localhost:8080/api/clanes/auditoria', configSeguridad)
+      api.get('/api/clanes/auditoria')
         .then(res => setAuditoria(res.data))
         .catch(() => setAuditoria([]));
 
       setItems(resItems.data); setPersonajes(resPjs.data); setRaids(resRaids.data);
-    } catch (error) { console.error(error); }
+    } catch (error) { console.error("Error cargando panel admin:", error); }
   };
 
   const handleGodDkp = (e) => {
     e.preventDefault();
-    axios.put(`http://localhost:8080/api/personajes/${godDkp.idPersonaje}/merito?cantidad=${-godDkp.cantidad}`, null, configSeguridad)
+    api.put(`/api/personajes/${godDkp.idPersonaje}/merito?cantidad=${-godDkp.cantidad}`)
       .then(() => { alert(`¡DKP inyectado al personaje!`); cargarDatosAdmin(); })
       .catch((err) => alert("Error del Servidor: " + (err.response?.data || err.message)));
   };
@@ -51,34 +49,65 @@ function PanelAdmin() {
     e.preventDefault();
     if (!godLoot.idPersonaje || !godLoot.idItem || !godLoot.idRaid) return alert("Faltan datos por seleccionar.");
     
-    // Inyecta directamente al SP con costo 0 (Modo Dios)
-    axios.post(`http://localhost:8080/api/raids/distribuir-loot?idPersonaje=${godLoot.idPersonaje}&idItem=${godLoot.idItem}&idRaid=${godLoot.idRaid}&costoDkp=0`, null, configSeguridad)
+    api.post(`/api/raids/distribuir-loot?idPersonaje=${godLoot.idPersonaje}&idItem=${godLoot.idItem}&idRaid=${godLoot.idRaid}&costoDkp=0`)
       .then(() => { 
         alert("¡Botín de los Dioses entregado con éxito! Revisa el Inventario y el Historial de Botín."); 
         cargarDatosAdmin(); 
       })
       .catch((err) => {
-        
         alert("Error en el Backend al entregar botín: " + (err.response?.data || err.message));
       });
   };
 
   const handleItemSubmit = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:8080/api/items', nuevoItem, configSeguridad).then(() => { alert("Ítem creado."); cargarDatosAdmin(); });
+    // CORRECCIÓN: Enviamos tanto camelCase como snake_case para asegurar compatibilidad
+    const payload = {
+      nombre: nuevoItem.nombre,
+      itemLvl: parseInt(nuevoItem.item_lvl) || 0,
+      item_lvl: parseInt(nuevoItem.item_lvl) || 0,
+      gananciaDkp: parseInt(nuevoItem.ganancia_dkp) || 0,
+      ganancia_dkp: parseInt(nuevoItem.ganancia_dkp) || 0
+    };
+
+    api.post('/api/items', payload)
+      .then(() => { alert("Ítem creado."); cargarDatosAdmin(); })
+      .catch(err => alert("Error creando ítem: " + err.message));
   };
 
   const handleRaidSubmit = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:8080/api/raids', { ...raidData, estado: 'Programada' }, configSeguridad).then(() => { alert("¡Raid Programada!"); cargarDatosAdmin(); });
+    // CORRECCIÓN: Compatibilidad camelCase y Coordenadas por defecto (Centro de Santiago)
+    const payload = {
+      nombre: raidData.nombre,
+      fecha: raidData.fecha,
+      itemLevelRequerido: parseInt(raidData.item_level_requerido) || 0,
+      item_level_requerido: parseInt(raidData.item_level_requerido) || 0,
+      cuposTanque: parseInt(raidData.cupos_tanque) || 0,
+      cupos_tanque: parseInt(raidData.cupos_tanque) || 0,
+      cuposHealer: parseInt(raidData.cupos_healer) || 0,
+      cupos_healer: parseInt(raidData.cupos_healer) || 0,
+      cuposDps: parseInt(raidData.cupos_dps) || 0,
+      cupos_dps: parseInt(raidData.cupos_dps) || 0,
+      estado: 'Programada',
+      latitud: -33.4489, 
+      longitud: -70.6693
+    };
+
+    api.post('/api/raids', payload)
+      .then(() => { alert("¡Raid Programada!"); cargarDatosAdmin(); })
+      .catch(err => alert("Error programando Raid: " + err.message));
   };
 
-const ejecutarSimulacion = async () => {
+  const ejecutarSimulacion = async () => {
     if (!itemRecompensa) return alert("Selecciona la recompensa primero.");
     setSimulando(true); setMensajeSimulacion("⚔️ ¡La batalla ha comenzado!"); setTiempoRestante(5);
 
+    // CORRECCIÓN: Validamos ambas variables para evitar el error 'undefined' en la URL
+    const idRaidActiva = modalSimulacion.id_raid || modalSimulacion.idRaid;
+
     try {
-      const resInscritos = await axios.get(`http://localhost:8080/api/raids/${modalSimulacion.id_raid}/inscripciones`, configSeguridad);
+      const resInscritos = await api.get(`/api/raids/${idRaidActiva}/inscripciones`);
       const inscritos = resInscritos.data;
 
       if (inscritos.length === 0) {
@@ -86,7 +115,6 @@ const ejecutarSimulacion = async () => {
         return setMensajeSimulacion("❌ Nadie se inscribió. La Raid fracasó.");
       }
 
-      // CANDADO DE SEGURIDAD PARA EVITAR DOBLE COBRO
       let finalizado = false; 
       const intervalo = setInterval(() => {
         setTiempoRestante(prev => {
@@ -101,28 +129,40 @@ const ejecutarSimulacion = async () => {
           return prev - 1;
         });
       }, 1000);
-    } catch (error) { setSimulando(false); setTiempoRestante(0); }
+    } catch (error) { 
+      setSimulando(false); 
+      setTiempoRestante(0);
+      setMensajeSimulacion("❌ Error al contactar al servidor durante la simulación."); 
+    }
   };
 
   const finalizarBatalla = async (inscritos) => {
-    const pjsInscritos = inscritos.map(ins => personajes.find(p => p.id_personaje === ins[1])).filter(Boolean);
-    pjsInscritos.sort((a, b) => b.puntos_merito - a.puntos_merito);
+    const pjsInscritos = inscritos.map(ins => personajes.find(p => (p.id_personaje || p.idPersonaje) === ins[1])).filter(Boolean);
+    
+    pjsInscritos.sort((a, b) => {
+      const dkpA = a.puntos_merito !== undefined ? a.puntos_merito : a.puntosMerito;
+      const dkpB = b.puntos_merito !== undefined ? b.puntos_merito : b.puntosMerito;
+      return dkpB - dkpA;
+    });
+
     const ganador = pjsInscritos[0]; 
-    const itemGanado = items.find(i => i.id_item === parseInt(itemRecompensa));
+    const itemGanado = items.find(i => (i.id_item || i.idItem) === parseInt(itemRecompensa));
     
     const costoFinal = itemGanado.ganancia_dkp !== undefined ? itemGanado.ganancia_dkp : itemGanado.gananciaDkp;
+    const idGanador = ganador.id_personaje || ganador.idPersonaje;
+    const idItem = itemGanado.id_item || itemGanado.idItem;
+    const idRaid = modalSimulacion.id_raid || modalSimulacion.idRaid;
 
     setMensajeSimulacion(`🏆 ¡Jefe Muerto! Entregando objeto a ${ganador.nombre}...`);
 
     try {
-      await axios.post(`http://localhost:8080/api/raids/distribuir-loot?idPersonaje=${ganador.id_personaje}&idItem=${itemGanado.id_item}&idRaid=${modalSimulacion.id_raid}&costoDkp=${costoFinal}`, null, configSeguridad);
-      await axios.put(`http://localhost:8080/api/raids/${modalSimulacion.id_raid}/estado?estado=Completada`, null, configSeguridad);
-      await axios.post('http://localhost:8080/api/ranking/refresh', null, configSeguridad);
+      await api.post(`/api/raids/distribuir-loot?idPersonaje=${idGanador}&idItem=${idItem}&idRaid=${idRaid}&costoDkp=${costoFinal}`);
+      await api.put(`/api/raids/${idRaid}/estado?estado=Completada`);
+      await api.post('/api/ranking/refresh');
       
       setMensajeSimulacion(`✅ Éxito: Se entregó el ítem a ${ganador.nombre} y se descontaron ${costoFinal} DKP.`);
       cargarDatosAdmin(); 
     } catch (err) { 
-    
       setMensajeSimulacion("❌ Error de BD: " + (err.response?.data || err.message)); 
     }
     setSimulando(false);
@@ -142,7 +182,11 @@ const ejecutarSimulacion = async () => {
           <form onSubmit={handleGodDkp} style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
             <select value={godDkp.idPersonaje} onChange={e => setGodDkp({...godDkp, idPersonaje: e.target.value})} required style={{ flex: 2, padding: '8px', backgroundColor: '#333', color: 'white' }}>
               <option value="">-- Regalar DKP a Personaje --</option>
-              {personajes.map(p => <option key={p.id_personaje} value={p.id_personaje}>{p.nombre} (DKP Actual: {p.puntos_merito})</option>)}
+              {personajes.map(p => {
+                const id = p.id_personaje || p.idPersonaje;
+                const dkp = p.puntos_merito !== undefined ? p.puntos_merito : p.puntosMerito;
+                return <option key={id} value={id}>{p.nombre} (DKP Actual: {dkp})</option>;
+              })}
             </select>
             <input type="number" placeholder="Cantidad de DKP" value={godDkp.cantidad} onChange={e => setGodDkp({...godDkp, cantidad: e.target.value})} required style={{ flex: 1, padding: '8px', backgroundColor: '#333', color: 'white' }} />
             <button type="submit" style={{ flex: 1, backgroundColor: '#00e676', color: 'black', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>Inyectar DKP</button>
@@ -152,15 +196,15 @@ const ejecutarSimulacion = async () => {
           <form onSubmit={handleGodLoot} style={{ display: 'flex', gap: '10px' }}>
             <select value={godLoot.idPersonaje} onChange={e => setGodLoot({...godLoot, idPersonaje: e.target.value})} required style={{ flex: 1, padding: '8px', backgroundColor: '#333', color: 'white' }}>
               <option value="">-- Personaje --</option>
-              {personajes.map(p => <option key={p.id_personaje} value={p.id_personaje}>{p.nombre}</option>)}
+              {personajes.map(p => <option key={p.id_personaje || p.idPersonaje} value={p.id_personaje || p.idPersonaje}>{p.nombre}</option>)}
             </select>
             <select value={godLoot.idItem} onChange={e => setGodLoot({...godLoot, idItem: e.target.value})} required style={{ flex: 1, padding: '8px', backgroundColor: '#333', color: 'white' }}>
               <option value="">-- Ítem a Regalar --</option>
-              {items.map(i => <option key={i.id_item} value={i.id_item}>{i.nombre}</option>)}
+              {items.map(i => <option key={i.id_item || i.idItem} value={i.id_item || i.idItem}>{i.nombre}</option>)}
             </select>
             <select value={godLoot.idRaid} onChange={e => setGodLoot({...godLoot, idRaid: e.target.value})} required style={{ flex: 1, padding: '8px', backgroundColor: '#333', color: 'white' }}>
               <option value="">-- ¿En qué Raid? --</option>
-              {raids.map(r => <option key={r.id_raid} value={r.id_raid}>{r.nombre}</option>)}
+              {raids.map(r => <option key={r.id_raid || r.idRaid} value={r.id_raid || r.idRaid}>{r.nombre}</option>)}
             </select>
             <button type="submit" style={{ padding: '8px', backgroundColor: '#ba68c8', color: 'white', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>Forzar Historial Botín</button>
           </form>
@@ -177,11 +221,16 @@ const ejecutarSimulacion = async () => {
             <button type="submit" style={{ padding: '9px 15px', backgroundColor: '#ba68c8', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>Crear</button>
           </form>
           <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
-            {items.map(i => (
-              <div key={i.id_item} style={{ padding: '10px', borderBottom: '1px solid #333' }}>
-                <strong>{i.nombre}</strong> <span style={{ color: '#aaa' }}>| Otorga: <strong style={{ color: '#61dafb' }}>+{i.item_lvl} Poder</strong> | Cuesta: <strong style={{ color: '#ff9800' }}>-{i.ganancia_dkp} DKP</strong></span>
-              </div>
-            ))}
+            {items.map(i => {
+              const id = i.id_item || i.idItem;
+              const gananciaDkp = i.ganancia_dkp !== undefined ? i.ganancia_dkp : i.gananciaDkp;
+              const itemLvl = i.item_lvl !== undefined ? i.item_lvl : i.itemLvl;
+              return (
+                <div key={id} style={{ padding: '10px', borderBottom: '1px solid #333' }}>
+                  <strong>{i.nombre}</strong> <span style={{ color: '#aaa' }}>| Otorga: <strong style={{ color: '#61dafb' }}>+{itemLvl} Poder</strong> | Cuesta: <strong style={{ color: '#ff9800' }}>-{gananciaDkp} DKP</strong></span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -204,12 +253,15 @@ const ejecutarSimulacion = async () => {
         <h2 style={{ textAlign: 'center', color: '#ff9800', borderBottom: '2px solid #ff9800', paddingBottom: '10px' }}>💎 Simular Batalla</h2>
         <div style={{ backgroundColor: '#1a1a1a', padding: '20px', borderRadius: '8px', marginBottom: '40px' }}>
           <div style={{ display: 'grid', gap: '15px' }}>
-            {raids.filter(r => r.estado === 'Programada').map(r => (
-              <div key={r.id_raid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', backgroundColor: '#242424', border: '1px solid #444', borderRadius: '6px' }}>
-                <strong style={{ color: '#61dafb', fontSize: '18px' }}>{r.nombre}</strong>
-                <button onClick={() => setModalSimulacion(r)} style={{ padding: '8px 15px', backgroundColor: '#ff9800', color: 'black', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Simular Evento</button>
-              </div>
-            ))}
+            {raids.filter(r => r.estado === 'Programada').map(r => {
+              const id = r.id_raid || r.idRaid;
+              return (
+                <div key={id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', backgroundColor: '#242424', border: '1px solid #444', borderRadius: '6px' }}>
+                  <strong style={{ color: '#61dafb', fontSize: '18px' }}>{r.nombre}</strong>
+                  <button onClick={() => setModalSimulacion(r)} style={{ padding: '8px 15px', backgroundColor: '#ff9800', color: 'black', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Simular Evento</button>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -221,7 +273,11 @@ const ejecutarSimulacion = async () => {
             <h2 style={{ color: '#ff9800', marginTop: 0 }}>Raid: {modalSimulacion.nombre}</h2>
             <select value={itemRecompensa} onChange={(e) => setItemRecompensa(e.target.value)} disabled={simulando} style={{ width: '100%', padding: '10px', borderRadius: '4px', backgroundColor: '#333', color: 'white', border: 'none', marginBottom: '20px' }}>
               <option value="">-- Elige la recompensa --</option>
-              {items.map(i => <option key={i.id_item} value={i.id_item}>{i.nombre} (Cuesta: {i.ganancia_dkp} DKP)</option>)}
+              {items.map(i => {
+                const id = i.id_item || i.idItem;
+                const gananciaDkp = i.ganancia_dkp !== undefined ? i.ganancia_dkp : i.gananciaDkp;
+                return <option key={id} value={id}>{i.nombre} (Cuesta: {gananciaDkp} DKP)</option>;
+              })}
             </select>
             {simulando && <div style={{ fontSize: '40px', fontWeight: 'bold', color: '#f44336', margin: '20px 0' }}>⏳ {tiempoRestante}s</div>}
             {mensajeSimulacion && <div style={{ backgroundColor: '#333', padding: '15px', borderRadius: '6px', marginBottom: '20px', color: '#61dafb' }}>{mensajeSimulacion}</div>}

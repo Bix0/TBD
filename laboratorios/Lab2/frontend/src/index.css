@@ -109,3 +109,15 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* ==================================================== */
+/* --- NUEVO REQUERIMIENTO: MAPA LEAFLET (LAB 2) --- */
+/* ==================================================== */
+.leaflet-container {
+  height: 500px;
+  width: 100%;
+  border-radius: 12px;
+  margin: 20px 0;
+  border: 2px solid var(--border);
+  z-index: 1; /* Mantiene el mapa detrás de menús desplegables si tienes */
+}

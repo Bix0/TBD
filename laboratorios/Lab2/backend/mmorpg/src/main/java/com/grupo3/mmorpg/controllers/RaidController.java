@@ -2,6 +2,8 @@ package com.grupo3.mmorpg.controllers;
 
 import com.grupo3.mmorpg.models.Raid;
 import com.grupo3.mmorpg.services.RaidService;
+import com.grupo3.mmorpg.repositories.RaidRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,10 @@ import java.util.List;
 public class RaidController {
 
     private final RaidService raidService;
+
+    // Inyectamos el repositorio solo para la consulta geoespacial rápida
+    @Autowired
+    private RaidRepository raidRepository;
 
     public RaidController(RaidService raidService) {
         this.raidService = raidService;
@@ -117,7 +123,6 @@ public class RaidController {
         return raidService.contarInscripcionesPorEstado(id);
     }
 
-    // EL NUEVO ENDPOINT PARA ENTREGAR LOOT Y COBRAR DKP
     @PostMapping("/distribuir-loot")
     public ResponseEntity<String> distribuirLoot(@RequestParam Long idPersonaje, @RequestParam Long idItem, @RequestParam Long idRaid, @RequestParam Integer costoDkp) {
         try {
@@ -126,5 +131,19 @@ public class RaidController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error al distribuir botín: " + e.getMessage());
         }
+    }
+
+    // --- NUEVO ENDPOINT GEOESPACIAL (LAB 2) ---
+    @GetMapping("/cercanas")
+    public ResponseEntity<List<Raid>> getRaidsCercanas(
+            @RequestParam double lon,
+            @RequestParam double lat,
+            @RequestParam(defaultValue = "5000") double distancia) {
+
+        List<Raid> raidsCercanas = raidRepository.findRaidsCercanas(lon, lat, distancia);
+        if (raidsCercanas.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(raidsCercanas);
     }
 }
