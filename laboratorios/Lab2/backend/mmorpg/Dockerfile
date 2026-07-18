@@ -14,8 +14,13 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
-# Copiar código fuente y compilar
+# Copiar código fuente
 COPY src ./src
+
+# Eliminar tests para evitar errores de dependencias faltantes en el build de Docker
+RUN rm -rf src/test
+
+# Compilar sin ejecutar tests
 RUN mvn package -DskipTests -B
 
 # Etapa 2: Ejecución con JDK 21
