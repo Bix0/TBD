@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+// Cambiamos TileLayer por ImageOverlay
+import { MapContainer, ImageOverlay, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import api from '../services/api'; // Importamos el interceptor con el token JWT
+import api from '../services/api'; 
 
 // =======================================================
 // --- DISEÑO PERSONALIZADO MMORPG (MARCADOR DE BOSS) ---
@@ -18,36 +19,42 @@ const MapaRaids = () => {
     const [raids, setRaids] = useState([]);
 
     useEffect(() => {
-        // Usamos nuestro interceptor 'api' que incluye el Authorization Bearer automáticamente
         api.get('/api/raids/cercanas', {
             params: {
-                lon: -70.64827,
-                lat: -33.45694,
-                distancia: 10000
+                // Ahora buscamos desde el centro del mapa 2D (500, 500)
+                lon: 500,
+                lat: 500,
+                // Aumentamos la distancia para que barra todo nuestro mapa de 1000x1000
+                distancia: 2000 
             }
         })
         .then(response => {
-            // response.data ya contiene el JSON listo
             setRaids(response.data || []);
         })
         .catch(error => {
             console.error("Error cargando el radar espacial:", error);
-            // Si el error es 403, el usuario no tiene permisos
         });
     }, []);
 
+    // Definimos el tamaño de nuestra imagen/plano
+    const bounds = [[0, 0], [1000, 1000]];
+
     return (
-        <MapContainer center={[-33.45694, -70.64827]} zoom={11} className="leaflet-container">
+        <MapContainer 
+            // Configuración plana requerida para mapas de imágenes estáticas
+            crs={L.CRS.Simple} 
+            bounds={bounds}
+            style={{ height: '700px', width: '100%', backgroundColor: '#000' }} 
+            className="leaflet-container"
+        >
             
-            {/* --- TILELAYER OSCURO TIPO RPG --- */}
-            <TileLayer
-                attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            {/* --- IMAGEN DEL JUEGO (Debe estar en public/mapa-juego.jpg) --- */}
+            <ImageOverlay
+                url="/mapa-juego.jpg" 
+                bounds={bounds}
             />
             
             {raids.map(raid => {
-                // Adaptación a cómo Hibernate Spatial serializa los datos (Geometry Point)
-                // A veces llega como {y, x} o {coordinates: [lon, lat]}
                 const lat = raid.ubicacionBoss?.y || raid.ubicacionBoss?.coordinates?.[1] || 0;
                 const lon = raid.ubicacionBoss?.x || raid.ubicacionBoss?.coordinates?.[0] || 0;
 

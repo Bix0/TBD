@@ -1,40 +1,48 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip } from 'react-leaflet';
+import { MapContainer, ImageOverlay, CircleMarker, Popup, Tooltip } from 'react-leaflet';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import api from '../services/api'; // <-- Importamos tu instancia de Axios
+import api from '../services/api'; 
 
 const MapaClanes = () => {
     const [clanesCalor, setClanesCalor] = useState([]);
 
     useEffect(() => {
-        // Usamos la instancia 'api' que ya inyecta el token y maneja los errores
         api.get('/api/clanes/mapa-calor')
-        .then(res => setClanesCalor(res.data)) // Axios ya parsea el JSON y lo guarda en res.data
+        .then(res => setClanesCalor(res.data))
         .catch(err => console.error("Error cargando mapa de calor:", err));
     }, []);
 
-    // Función para calcular el radio del círculo según el DKP
     const calcularRadio = (dkp) => {
         const base = 10;
-        const extra = Math.min(dkp / 50, 40); // Límite máximo de crecimiento
+        const extra = Math.min(dkp / 50, 40); 
         return base + extra;
     };
 
+    // Definimos los límites del mapa (Plano de 1000x1000)
+    // El formato siempre es [Y, X]
+    const bounds = [[0, 0], [1000, 1000]];
+
     return (
-        <MapContainer center={[-33.45694, -70.64827]} zoom={11} className="leaflet-container">
-            {/* Tema oscuro para mantener el estilo MMORPG */}
-            <TileLayer
-                attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        <MapContainer 
+            crs={L.CRS.Simple} // Cambiamos la Tierra por un plano cartesiano
+            bounds={bounds} // Ajustamos la cámara al tamaño de la imagen
+            style={{ height: '700px', width: '100%', backgroundColor: '#000' }} 
+            className="leaflet-container"
+        >
+            {/* Aquí cargamos tu imagen desde la carpeta public */}
+            <ImageOverlay
+                url="/mapa-juego.jpg" 
+                bounds={bounds}
             />
             
             {clanesCalor.map((clan, index) => {
-                // El backend nos devuelve un Object[]: [id_clan, nombre, lat, lon, dkp_total]
                 const [id, nombre, lat, lon, dkpTotal] = clan;
 
                 return (
                     <CircleMarker 
                         key={index} 
+                        // lat y lon ahora representan el eje Y y X en el plano de 0 a 1000
                         center={[lat, lon]} 
                         pathOptions={{ 
                             color: '#ff4b4b', 
