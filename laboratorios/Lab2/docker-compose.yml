@@ -29,12 +29,13 @@ services:
       db:
         condition: service_healthy
 
+  frontend:
+    build: ./frontend
+    container_name: lab2-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
 volumes:
   pgdata:
-
-# ============================================
-# USO EN DESARROLLO
-# ============================================
-# docker compose up -d          ← BD + Backend
-# cd frontend && npm run dev    ← Frontend local
-# ============================================
