@@ -57,7 +57,7 @@ const MapaRaids = () => {
           idPersonaje: personajeId || undefined,
           lon: mapCenter.lng,
           lat: mapCenter.lat,
-          distancia: 2000,
+          distancia: 500, // Reducido a 500 para que el radar no abarque todo el mapa
         },
       })
       .then((response) => setRaids(response.data || []))

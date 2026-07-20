@@ -3,6 +3,7 @@ import {
   MapContainer,
   ImageOverlay,
   CircleMarker,
+  Marker,
   Popup,
   Tooltip,
 } from "react-leaflet";
@@ -10,8 +11,18 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import api from "../services/api";
 
+const playerIcon = new L.Icon({
+  iconUrl: "/player_icon.png",
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40],
+});
+
 const MapaClanes = () => {
   const [clanesCalor, setClanesCalor] = useState([]);
+  const [personajes, setPersonajes] = useState([]);
+  const userId = localStorage.getItem("userId");
+  const activeId = localStorage.getItem("activePersonajeId");
 
   useEffect(() => {
     api
@@ -19,6 +30,17 @@ const MapaClanes = () => {
       .then((res) => setClanesCalor(res.data))
       .catch((err) => console.error("Error cargando mapa de calor:", err));
   }, []);
+
+  useEffect(() => {
+    if (userId) {
+      api
+        .get(`/api/personajes/jugador/${userId}/todos`)
+        .then((res) => {
+          setPersonajes(res.data || []);
+        })
+        .catch((err) => console.error("Error cargando personajes:", err));
+    }
+  }, [userId]);
 
   const calcularRadio = (dkp) => {
     const base = 10;
@@ -44,6 +66,25 @@ const MapaClanes = () => {
     >
       {/* Aquí cargamos tu imagen desde la carpeta public */}
       <ImageOverlay url="/mapa-juego.jpg" bounds={bounds} />
+
+      {/* Renderizar jugador activo */}
+      {(() => {
+        const activePersonaje = personajes.find(p => (p.idPersonaje || p.id_personaje) == activeId);
+        if (activePersonaje && activePersonaje.latitud != null && activePersonaje.longitud != null) {
+          return (
+            <Marker position={[activePersonaje.latitud, activePersonaje.longitud]} icon={playerIcon}>
+              <Popup>
+                <div style={{ textAlign: "center" }}>
+                  <strong style={{ color: "#61dafb", fontSize: "16px" }}>🧑 {activePersonaje.nombre} (Tú)</strong>
+                  <br />
+                  Nivel: {activePersonaje.nivel} | Poder: {activePersonaje.itemLevel || activePersonaje.item_level}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        }
+        return null;
+      })()}
 
       {clanesCalor.map((clan, index) => {
         const [id, nombre, lat, lon, dkpTotal] = clan;
