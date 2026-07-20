@@ -32,4 +32,8 @@ public interface PersonajeRepository extends JpaRepository<Personaje, Long> {
     Optional<Personaje> findFirstByJugadorIdJugador(Long jugadorId);
 
     List<Personaje> findByJugadorIdJugador(Long jugadorId);
+
+    // --- LAB 2: FILTRAR HEALERS CERCANOS AL TANK ---
+    @Query(value = "SELECT * FROM Personaje p WHERE (p.rol_clan ILIKE '%healer%' OR p.rol_clan ILIKE '%sanador%' OR p.clase ILIKE '%sacerdote%' OR p.clase ILIKE '%druida%' OR p.clase ILIKE '%chaman%' OR p.clase ILIKE '%paladin%') AND p.ubicacion_actual IS NOT NULL AND ST_DWithin(p.ubicacion_actual, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :distancia)", nativeQuery = true)
+    List<Personaje> findHealersCercanos(@Param("lon") double lon, @Param("lat") double lat, @Param("distancia") double distancia);
 }

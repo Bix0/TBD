@@ -75,4 +75,16 @@ public class PersonajeService {
     public List<Personaje> obtenerTodosPorJugadorId(Long jugadorId) {
         return personajeRepository.findByJugadorIdJugador(jugadorId);
     }
+
+    public List<Personaje> obtenerHealersDisponibles(Long tankId, double distancia) {
+        Optional<Personaje> tankOpt = personajeRepository.findById(tankId);
+        if (tankOpt.isEmpty()) {
+            throw new IllegalArgumentException("Tanque no encontrado");
+        }
+        Personaje tank = tankOpt.get();
+        if (tank.getLatitud() == null || tank.getLongitud() == null) {
+            throw new IllegalArgumentException("El Tanque no tiene ubicación conocida");
+        }
+        return personajeRepository.findHealersCercanos(tank.getLongitud(), tank.getLatitud(), distancia);
+    }
 }

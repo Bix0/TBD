@@ -176,4 +176,20 @@ public class PersonajeController {
     public List<Personaje> obtenerTodosPorJugadorId(@PathVariable Long jugadorId) {
         return personajeService.obtenerTodosPorJugadorId(jugadorId);
     }
+
+    /**
+     * Obtiene healers disponibles cerca de un Tanque
+     * GET /api/personajes/healers-disponibles?tankId=X&distancia=Y
+     */
+    @GetMapping("/healers-disponibles")
+    public ResponseEntity<List<Personaje>> obtenerHealersDisponibles(
+            @RequestParam Long tankId, 
+            @RequestParam(defaultValue = "500.0") double distancia) {
+        try {
+            List<Personaje> healers = personajeService.obtenerHealersDisponibles(tankId, distancia);
+            return ResponseEntity.ok(healers);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

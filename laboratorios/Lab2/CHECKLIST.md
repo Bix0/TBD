@@ -98,7 +98,7 @@
 | 1 | **Clanes cercanos**: Endpoint que recibe GPS y devuelve clanes cercanos usando `ST_DWithin` | ✅ | `GET /api/clanes/cercanos?lat=X&lon=Y&distancia=Z` |
 | 2 | **Mapa de calor**: Vista materializada de clanes mejor rankeados | ✅ | `mv_calor_clanes` + `GET /api/clanes/mapa-calor` |
 | 3 | **SP loot por proximidad**: Distribuir loot solo a personajes dentro de 50 uds del boss | ✅ | `sp_distribuir_botin_proximidad` en `schema.sql` |
-| 4 | **Formación de grupos**: Filtrar Healers en misma región que el Tanke | ❌ **PENDIENTE** | Query en `PersonajeRepository` + endpoint |
+| 4 | **Formación de grupos**: Filtrar Healers en misma región que el Tanke | ✅ | Query en `PersonajeRepository` + endpoint |
 | 5 | **Auditoría territorial**: Registrar coordenadas al transferir liderazgo | ✅ | Trigger `fn_auditar_liderazgo` modificado |
 
 ---
@@ -118,12 +118,12 @@
 
 ---
 
-## ❌ PENDIENTE DE IMPLEMENTAR
+## ✅ PENDIENTE DE IMPLEMENTAR
 
 ### 1. Formación de Grupos (Healers + Tanke)
 
 **Dónde**: `PersonajeRepository.java`, `PersonajeService.java`, `PersonajeController.java`
-**Qué**: Endpoint `GET /api/personajes/healers-disponibles?tankId=X` que filtre Healers en la misma `region_mapa` (o a cierta distancia) que el Tanke líder
+**Qué**: Endpoint `GET /api/personajes/healers-disponibles?tankId=X` que filtre Healers en la misma `region_mapa` (o a cierta distancia) que el Tanke líder. **(COMPLETADO)**
 
 ---
 
@@ -132,5 +132,6 @@
 | Categoría | Hecho | Pendiente |
 |-----------|-------|-----------|
 | Backend Lab1 (CRUD, SPs, Triggers, MV) | 100% | 0 |
-| Backend Lab2 (PostGIS) | 4/5 | Formación grupos |
+| Backend Lab2 (PostGIS) | 5/5 | 0 |
 | Frontend | 100% funcional | — |
+
