@@ -1,31 +1,70 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, ImageOverlay, Marker, Popup } from "react-leaflet";
+import { MapContainer, ImageOverlay, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import api from "../services/api";
 
 const bossIcon = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/3593/3593502.png",
+  iconUrl: "/boss_icon.png",
   iconSize: [40, 40],
   iconAnchor: [20, 40],
   popupAnchor: [0, -40],
 });
 
+const playerIcon = new L.Icon({
+  iconUrl: "/player_icon.png",
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40],
+});
+
+function RaidMapController({ onCenterChange }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const updateCenter = () => {
+      const center = map.getCenter();
+      onCenterChange({ lat: center.lat, lng: center.lng });
+    };
+
+    updateCenter();
+    map.on("move", updateCenter);
+    map.on("zoom", updateCenter);
+
+    return () => {
+      map.off("move", updateCenter);
+      map.off("zoom", updateCenter);
+    };
+  }, [map, onCenterChange]);
+
+  return null;
+}
+
 const MapaRaids = () => {
   const [raids, setRaids] = useState([]);
   const [personajes, setPersonajes] = useState([]);
   const [selectedPersonaje, setSelectedPersonaje] = useState("");
+  const [mapCenter, setMapCenter] = useState({ lat: 500, lng: 500 });
   const userId = localStorage.getItem("userId");
   const activeId = localStorage.getItem("activePersonajeId");
 
   useEffect(() => {
+    const personajeId = activeId || selectedPersonaje;
+
     api
       .get("/api/raids/cercanas", {
-        params: { lon: 500, lat: 500, distancia: 2000 },
+        params: {
+          idPersonaje: personajeId || undefined,
+          lon: mapCenter.lng,
+          lat: mapCenter.lat,
+          distancia: 2000,
+        },
       })
       .then((response) => setRaids(response.data || []))
       .catch((error) => console.error("Error cargando raids:", error));
+  }, [activeId, mapCenter.lat, mapCenter.lng, selectedPersonaje]);
 
+  useEffect(() => {
     if (userId) {
       api
         .get(`/api/personajes/jugador/${userId}/todos`)
@@ -69,7 +108,27 @@ const MapaRaids = () => {
       style={{ height: "700px", width: "100%", backgroundColor: "#000" }}
       className="leaflet-container"
     >
+      <RaidMapController onCenterChange={setMapCenter} />
       <ImageOverlay url="/mapa-juego.jpg" bounds={bounds} />
+
+      {/* Renderizar jugador activo */}
+      {(() => {
+        const activePersonaje = personajes.find(p => (p.idPersonaje || p.id_personaje) == (activeId || selectedPersonaje));
+        if (activePersonaje && activePersonaje.latitud != null && activePersonaje.longitud != null) {
+          return (
+            <Marker position={[activePersonaje.latitud, activePersonaje.longitud]} icon={playerIcon}>
+              <Popup>
+                <div style={{ textAlign: "center" }}>
+                  <strong style={{ color: "#61dafb", fontSize: "16px" }}>🧑 {activePersonaje.nombre} (Tú)</strong>
+                  <br />
+                  Nivel: {activePersonaje.nivel} | Poder: {activePersonaje.itemLevel || activePersonaje.item_level}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        }
+        return null;
+      })()}
 
       {raids.map((raid) => {
         const lat =

@@ -1,6 +1,5 @@
 package com.grupo3.mmorpg.models;
-
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,6 +33,7 @@ public class Clan {
     private Long idLider;
 
     // --- NUEVO REQUERIMIENTO POSTGIS (LAB 2) ---
+    @JsonIgnore
     @Column(columnDefinition = "geometry(Point, 4326)")
     private Point ubicacion;
 }

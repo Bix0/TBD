@@ -65,9 +65,16 @@ public class SecurityConfig {
                                 .permitAll() // Listar raids público
                                 .requestMatchers(HttpMethod.GET, "/api/raids/**")
                                 .permitAll() // Ver raid individual público
-                                // NUEVA LÍNEA: Permitir GET a clanes (para el Mapa de Calor)
                                 .requestMatchers(HttpMethod.GET, "/api/clanes/**")
                                 .permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/personajes/**")
+                                .authenticated()
+                                .requestMatchers(HttpMethod.POST, "/api/personajes/**")
+                                .authenticated()
+                                .requestMatchers(HttpMethod.PUT, "/api/personajes/**")
+                                .authenticated()
+                                .requestMatchers(HttpMethod.DELETE, "/api/personajes/**")
+                                .authenticated()
                                 // Rutas solo para Admin (creación/modificación de datos)
                                 .requestMatchers(HttpMethod.POST, "/api/items/**")
                                 .hasRole("ADMIN")

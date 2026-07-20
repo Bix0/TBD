@@ -1,15 +1,17 @@
 package com.grupo3.mmorpg.controllers;
 
+import com.grupo3.mmorpg.models.Personaje;
 import com.grupo3.mmorpg.models.Raid;
 import com.grupo3.mmorpg.services.RaidService;
+import com.grupo3.mmorpg.repositories.PersonajeRepository;
 import com.grupo3.mmorpg.repositories.RaidRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -17,13 +19,13 @@ import java.util.List;
 public class RaidController {
 
     private final RaidService raidService;
+    private final RaidRepository raidRepository;
+    private final PersonajeRepository personajeRepository;
 
-    // Inyectamos el repositorio solo para la consulta geoespacial rápida
-    @Autowired
-    private RaidRepository raidRepository;
-
-    public RaidController(RaidService raidService) {
+    public RaidController(RaidService raidService, RaidRepository raidRepository, PersonajeRepository personajeRepository) {
         this.raidService = raidService;
+        this.raidRepository = raidRepository;
+        this.personajeRepository = personajeRepository;
     }
 
     @PostMapping
@@ -136,11 +138,23 @@ public class RaidController {
     // --- NUEVO ENDPOINT GEOESPACIAL (LAB 2) ---
     @GetMapping("/cercanas")
     public ResponseEntity<List<Raid>> getRaidsCercanas(
-            @RequestParam double lon,
-            @RequestParam double lat,
+            @RequestParam(required = false) Long idPersonaje,
+            @RequestParam(defaultValue = "500") double lon,
+            @RequestParam(defaultValue = "500") double lat,
             @RequestParam(defaultValue = "5000") double distancia) {
 
-        List<Raid> raidsCercanas = raidRepository.findRaidsCercanas(lon, lat, distancia);
+        double lonConsulta = lon;
+        double latConsulta = lat;
+
+        if (idPersonaje != null) {
+            Optional<Personaje> personajeOpt = personajeRepository.findById(idPersonaje);
+            if (personajeOpt.isPresent() && personajeOpt.get().getUbicacionActual() != null) {
+                lonConsulta = personajeOpt.get().getUbicacionActual().getX();
+                latConsulta = personajeOpt.get().getUbicacionActual().getY();
+            }
+        }
+
+        List<Raid> raidsCercanas = raidRepository.findRaidsCercanas(lonConsulta, latConsulta, distancia);
         if (raidsCercanas.isEmpty()) {
             return ResponseEntity.noContent().build();
         }

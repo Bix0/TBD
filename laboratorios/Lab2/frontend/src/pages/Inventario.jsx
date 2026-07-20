@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar';
 function Inventario() {
   const [itemsInventario, setItemsInventario] = useState([]);
   const [catalogo, setCatalogo] = useState([]);
-  
+
   const idPersonajeActivo = localStorage.getItem('activePersonajeId');
 
   const cargarDatos = async () => {
@@ -34,15 +34,15 @@ function Inventario() {
 
       const accion = estaEquipado ? 'desequipar' : 'equipar';
       await api.put(`/api/personajes/${idPersonajeActivo}/inventario/${idInventario}/${accion}`);
-      
-      cargarDatos(); 
+
+      cargarDatos();
     } catch (error) {
       alert("Error al intentar equipar el arma.");
     }
   };
 
   const tirarObjeto = (idInventario) => {
-    if(window.confirm("¿Seguro que deseas botar este ítem? Se perderá para siempre.")) {
+    if (window.confirm("¿Seguro que deseas botar este ítem? Se perderá para siempre.")) {
       api.delete(`/api/personajes/${idPersonajeActivo}/inventario/${idInventario}`)
         .then(() => cargarDatos());
     }
@@ -65,12 +65,12 @@ function Inventario() {
             </div>
           ) : (
             itemsInventario.map((inv, index) => {
-              // Validamos ambas opciones de escritura para el ID
-              const idItemMochila = inv.id_item || inv.idItem;
-              const idMochila = inv.id_inventario || inv.idInventario || index; 
-              
+              // Validamos ambas opciones de escritura para el ID, incluyendo la entidad anidada 'item'
+              const idItemMochila = inv.id_item || inv.idItem || (inv.item && (inv.item.idItem || inv.item.id_item));
+              const idMochila = inv.id_inventario || inv.idInventario || index;
+
               const dataItem = catalogo.find(c => (c.id_item || c.idItem) === idItemMochila) || { nombre: 'Ítem Desconocido', item_lvl: 0, ganancia_dkp: 0 };
-              
+
               return (
                 <div key={idMochila} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px', backgroundColor: inv.equipado ? '#1e3320' : '#1a1a1a', border: inv.equipado ? '1px solid #4caf50' : '1px solid #444', borderRadius: '8px' }}>
                   <div>
@@ -80,7 +80,7 @@ function Inventario() {
                       <span style={{ backgroundColor: '#333', padding: '4px 8px', borderRadius: '4px', fontSize: '13px', color: '#61dafb' }}>💎 Valor DKP: {dataItem.ganancia_dkp || dataItem.gananciaDkp}</span>
                     </div>
                   </div>
-                  
+
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <button onClick={() => manejarEquipar((inv.id_inventario || inv.idInventario), inv.equipado)} style={{ padding: '10px 20px', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', backgroundColor: inv.equipado ? '#f44336' : '#4caf50' }}>
                       {inv.equipado ? 'Desequipar' : 'Equipar'}
