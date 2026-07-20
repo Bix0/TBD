@@ -70,8 +70,8 @@ BEGIN
 
     -- Lógica Original
     UPDATE Personaje SET puntos_merito = puntos_merito - p_costo_dkp WHERE id_personaje = p_id_personaje;
-    INSERT INTO Historial_Loot (id_raid, id_personaje, id_item, estado_loot)
-    VALUES (p_id_raid, p_id_personaje, p_id_item, 'Botín Ganado');
+    INSERT INTO Historial_Loot (id_raid, id_personaje, id_item, estado_loot, fecha)
+    VALUES (p_id_raid, p_id_personaje, p_id_item, 'Botín Ganado', NOW());
     INSERT INTO Inventario (id_item, id_personaje, cantidad, equipado)
     VALUES (p_id_item, p_id_personaje, 1, FALSE);
     UPDATE Raid SET estado = 'Completada' WHERE id_raid = p_id_raid;
@@ -93,6 +93,38 @@ BEGIN
     INSERT INTO Inscripcion_Raid (id_raid, id_personaje, estado, asistio)
     SELECT v_id_raid_nueva, id_personaje, 'Pendiente', FALSE
     FROM Personaje WHERE rol_clan = 'Raider';
+END;
+$$//
+
+-- Lab 2: Distribuir Botín por Proximidad (50 uds del boss)
+DROP PROCEDURE IF EXISTS sp_distribuir_botin_proximidad(BIGINT, BIGINT, INT)//
+CREATE OR REPLACE PROCEDURE sp_distribuir_botin_proximidad(
+    p_id_raid BIGINT, p_id_item BIGINT, p_costo_dkp INT
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_ubicacion_boss GEOMETRY;
+    v_personaje RECORD;
+BEGIN
+    SELECT ubicacion_boss INTO v_ubicacion_boss FROM Raid WHERE id_raid = p_id_raid;
+    IF v_ubicacion_boss IS NULL THEN
+        RAISE EXCEPTION 'La raid no tiene ubicacion de boss';
+    END IF;
+    FOR v_personaje IN (
+        SELECT p.id_personaje FROM Inscripcion_Raid ir
+        JOIN Personaje p ON ir.id_personaje = p.id_personaje
+        WHERE ir.id_raid = p_id_raid AND ir.asistio = TRUE
+        AND ST_DWithin(p.ubicacion_actual, v_ubicacion_boss, 50)
+    ) LOOP
+        UPDATE Personaje SET puntos_merito = puntos_merito - p_costo_dkp
+        WHERE id_personaje = v_personaje.id_personaje;
+        INSERT INTO Historial_Loot (id_raid, id_personaje, id_item, estado_loot, fecha)
+        VALUES (p_id_raid, v_personaje.id_personaje, p_id_item, 'Botin por Proximidad', NOW());
+        INSERT INTO Inventario (id_item, id_personaje, cantidad, equipado)
+        VALUES (p_id_item, v_personaje.id_personaje, 1, FALSE);
+    END LOOP;
+    UPDATE Raid SET estado = 'Completada' WHERE id_raid = p_id_raid;
+    UPDATE Inscripcion_Raid SET asistio = TRUE, estado = 'Completada' WHERE id_raid = p_id_raid;
 END;
 $$//
 

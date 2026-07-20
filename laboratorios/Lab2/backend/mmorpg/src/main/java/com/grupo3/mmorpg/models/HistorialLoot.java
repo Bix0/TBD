@@ -38,7 +38,7 @@ public class HistorialLoot {
     @ToString.Exclude
     private Item item;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fecha;
 
     private String estadoLoot;

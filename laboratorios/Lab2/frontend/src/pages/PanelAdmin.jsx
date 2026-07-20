@@ -11,7 +11,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 const bossIconMap = new L.Icon({
-  iconUrl: "https://cdn-icons-png.flaticon.com/512/3593/3593502.png",
+  iconUrl: "/boss_icon.png",
   iconSize: [30, 30],
   iconAnchor: [15, 30],
   popupAnchor: [0, -30],
@@ -731,7 +731,7 @@ function PanelAdmin() {
                   step="1"
                   min="0"
                   max="1000"
-                  max="1000"
+                  style={{ width: "100%", padding: "6px" }}
                 />
               </div>
               <div style={{ flex: 1 }}>
@@ -750,7 +750,7 @@ function PanelAdmin() {
                   step="1"
                   min="0"
                   max="1000"
-                  max="1000"
+                  style={{ width: "100%", padding: "6px" }}
                 />
               </div>
             </div>

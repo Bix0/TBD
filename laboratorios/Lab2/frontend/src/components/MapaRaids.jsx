@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, ImageOverlay, Marker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  ImageOverlay,
+  Marker,
+  Popup,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import api from "../services/api";
@@ -57,7 +63,7 @@ const MapaRaids = () => {
           idPersonaje: personajeId || undefined,
           lon: mapCenter.lng,
           lat: mapCenter.lat,
-          distancia: 500, // Reducido a 500 para que el radar no abarque todo el mapa
+          distancia: 2000, // Distancia para cubrir todo el mapa (0-1000)
         },
       })
       .then((response) => setRaids(response.data || []))
@@ -113,15 +119,29 @@ const MapaRaids = () => {
 
       {/* Renderizar jugador activo */}
       {(() => {
-        const activePersonaje = personajes.find(p => (p.idPersonaje || p.id_personaje) == (activeId || selectedPersonaje));
-        if (activePersonaje && activePersonaje.latitud != null && activePersonaje.longitud != null) {
+        const activePersonaje = personajes.find(
+          (p) =>
+            (p.idPersonaje || p.id_personaje) ==
+            (activeId || selectedPersonaje),
+        );
+        if (
+          activePersonaje &&
+          activePersonaje.latitud != null &&
+          activePersonaje.longitud != null
+        ) {
           return (
-            <Marker position={[activePersonaje.latitud, activePersonaje.longitud]} icon={playerIcon}>
+            <Marker
+              position={[activePersonaje.latitud, activePersonaje.longitud]}
+              icon={playerIcon}
+            >
               <Popup>
                 <div style={{ textAlign: "center" }}>
-                  <strong style={{ color: "#61dafb", fontSize: "16px" }}>🧑 {activePersonaje.nombre} (Tú)</strong>
+                  <strong style={{ color: "#61dafb", fontSize: "16px" }}>
+                    🧑 {activePersonaje.nombre} (Tú)
+                  </strong>
                   <br />
-                  Nivel: {activePersonaje.nivel} | Poder: {activePersonaje.itemLevel || activePersonaje.item_level}
+                  Nivel: {activePersonaje.nivel} | Poder:{" "}
+                  {activePersonaje.itemLevel || activePersonaje.item_level}
                 </div>
               </Popup>
             </Marker>

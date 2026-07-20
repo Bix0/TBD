@@ -44,6 +44,12 @@ public interface RaidRepository extends JpaRepository<Raid, Long> {
                          @Param("idRaid") Long idRaid,
                          @Param("costoDkp") Integer costoDkp);
 
+    @Modifying
+    @Query(value = "CALL sp_distribuir_botin_proximidad(:idRaid, :idItem, :costoDkp)", nativeQuery = true)
+    void distribuirBotinProximidad(@Param("idRaid") Long idRaid,
+                                   @Param("idItem") Long idItem,
+                                   @Param("costoDkp") Integer costoDkp);
+
     // === INSCRIPCIONES ===
 
     @Modifying

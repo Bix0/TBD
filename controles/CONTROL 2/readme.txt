@@ -1,4 +1,4 @@
-Integrantes
+Integrantes:
 Bruno Gutiérrez
 Alejandra Silva
 Emilio Poblete
