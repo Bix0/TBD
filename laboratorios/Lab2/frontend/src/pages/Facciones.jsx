@@ -169,16 +169,15 @@ function Facciones() {
             backgroundColor: "#1a1a1a",
             padding: "20px",
             borderRadius: "8px",
-            border: "1px solid #ff4b4b",
+            border: "1px solid #61dafb",
             marginTop: "30px",
           }}
         >
-          <h2 style={{ textAlign: "center", color: "#ff4b4b", marginTop: 0 }}>
-            🔥 Mapa de Calor de Clanes
+          <h2 style={{ textAlign: "center", color: "#61dafb", marginTop: 0 }}>
+            🗺️ Mapa Geoespacial y Análisis de Clanes
           </h2>
-          <p style={{ color: "#aaa", fontSize: "14px", marginBottom: "15px" }}>
-            Los círculos rojos representan los clanes. Mientras más grande el
-            círculo, mayor su poder acumulado (DKP).
+          <p style={{ color: "#aaa", fontSize: "14px", marginBottom: "15px", textAlign: "center" }}>
+            Alterna entre la visualización de <b>Mapa de Calor por DKP</b> o realiza búsquedas de <b>Clanes Cercanos (PostGIS ST_DWithin)</b> en tiempo real.
           </p>
           <MapaClanes />
         </div>

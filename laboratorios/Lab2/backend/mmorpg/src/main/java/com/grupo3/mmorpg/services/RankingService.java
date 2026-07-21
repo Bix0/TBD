@@ -41,6 +41,11 @@ public class RankingService {
     public boolean actualizarRanking() {
         String sql = "REFRESH MATERIALIZED VIEW mv_ranking_clan";
         jdbcTemplate.execute(sql);
+        try {
+            jdbcTemplate.execute("REFRESH MATERIALIZED VIEW mv_calor_clanes");
+        } catch (Exception e) {
+            // ignorar si no existe la vista en algunos entornos de prueba
+        }
         return true;
     }
     

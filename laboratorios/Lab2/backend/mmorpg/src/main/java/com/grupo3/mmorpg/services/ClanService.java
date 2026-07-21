@@ -2,6 +2,8 @@ package com.grupo3.mmorpg.services;
 
 import com.grupo3.mmorpg.models.Clan;
 import com.grupo3.mmorpg.repositories.ClanRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,8 +18,31 @@ public class ClanService {
 
     private final ClanRepository clanRepository;
 
+    @Autowired
+    private PersonajeService personajeService;
+
     public ClanService(ClanRepository clanRepository) {
         this.clanRepository = clanRepository;
+    }
+
+    @Transactional
+    public Optional<Clan> unirseAlClan(Long idClan, Long idPersonaje) {
+        if (!clanRepository.findById(idClan).isPresent()) {
+            throw new IllegalArgumentException("Clan no encontrado");
+        }
+        Clan thisClan = clanRepository.findById(idClan).get();
+        personajeService.unirseAlClan(idPersonaje, thisClan);
+        return Optional.of(thisClan);
+    }
+
+    @Transactional
+    public Optional<Clan> salirDeClan(Long idClan, Long idPersonaje) {
+        if (!clanRepository.findById(idClan).isPresent()) {
+            throw new IllegalArgumentException("Clan no encontrado");
+        }
+        Clan thisClan = clanRepository.findById(idClan).get();
+        personajeService.salirDeClan(idPersonaje);
+        return Optional.of(thisClan);
     }
 
     @Transactional

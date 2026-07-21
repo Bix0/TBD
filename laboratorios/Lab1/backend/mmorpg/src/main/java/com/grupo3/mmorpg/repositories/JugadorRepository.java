@@ -33,7 +33,7 @@ public class JugadorRepository {
 
     public Optional<Jugador> findById(Long id) {
         String sql = "SELECT * FROM Jugador WHERE id_jugador = ?";
-        List<Jugador> result = jdbcTemplate.query(sql, new Object[]{id}, JUGADOR_ROW_MAPPER);
+        List<Jugador> result = jdbcTemplate.query(sql,  JUGADOR_ROW_MAPPER, id);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 
@@ -54,13 +54,13 @@ public class JugadorRepository {
 
     public Optional<Jugador> findByUsername(String username) {
         String sql = "SELECT * FROM Jugador WHERE username = ?";
-        List<Jugador> result = jdbcTemplate.query(sql, new Object[]{username}, JUGADOR_ROW_MAPPER);
+        List<Jugador> result = jdbcTemplate.query(sql, JUGADOR_ROW_MAPPER, username);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 
     public boolean existsByUsername(String username) {
         String sql = "SELECT COUNT(*) FROM Jugador WHERE username = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, new Object[]{username}, Integer.class);
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, username);
         return count != null && count > 0;
     }
 
@@ -73,13 +73,12 @@ public class JugadorRepository {
                 "JOIN Raid r ON h.id_raid = r.id_raid " +
                 "WHERE p.id_jugador = ? ORDER BY h.fecha DESC";
 
-        return jdbcTemplate.query(sql, new Object[]{idJugador},
-                (rs, rowNum) -> new Object[]{
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new Object[]{
                         rs.getTimestamp("fecha"),
                         rs.getString("personaje"),
                         rs.getString("item"),
                         rs.getString("raid"),
                         rs.getString("estado_loot")
-                });
+                }, idJugador);
     }
 }

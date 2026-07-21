@@ -46,7 +46,8 @@ public class ClanRepository {
      */
     public Optional<Clan> findById(Long id) {
         String sql = "SELECT * FROM Clan WHERE id_clan = ?";
-        List<Clan> result = jdbcTemplate.query(sql, new Object[]{id}, CLAN_ROW_MAPPER);
+        // Cambiamos el orden: primero el SQL, luego el RowMapper, y al final los argumentos (varargs)
+        List<Clan> result = jdbcTemplate.query(sql, CLAN_ROW_MAPPER, id);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
     
@@ -95,7 +96,7 @@ public class ClanRepository {
      */
     public Optional<Clan> findByName(String nombre) {
         String sql = "SELECT * FROM Clan WHERE nombre = ?";
-        List<Clan> result = jdbcTemplate.query(sql, new Object[]{nombre}, CLAN_ROW_MAPPER);
+        List<Clan> result = jdbcTemplate.query(sql, CLAN_ROW_MAPPER, nombre);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
     
@@ -105,7 +106,7 @@ public class ClanRepository {
      */
     public boolean existsByName(String nombre) {
         String sql = "SELECT COUNT(*) FROM Clan WHERE nombre = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, new Object[]{nombre}, Integer.class);
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, nombre);
         return count != null && count > 0;
     }
     
@@ -115,8 +116,7 @@ public class ClanRepository {
      */
     public Optional<Long> getLiderId(Long idClan) {
         String sql = "SELECT id_lider FROM Clan WHERE id_clan = ?";
-        List<Long> result = jdbcTemplate.query(sql, new Object[]{idClan}, 
-            (rs, rowNum) -> rs.getLong("id_lider"));
+        List<Long> result = jdbcTemplate.query(sql, (rs, rowNum) -> rs.getLong("id_lider"), idClan);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 

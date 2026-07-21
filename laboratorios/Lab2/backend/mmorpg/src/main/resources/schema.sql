@@ -42,7 +42,7 @@ CREATE MATERIALIZED VIEW mv_calor_clanes AS
 SELECT c.id_clan, c.nombre, c.ubicacion,
        COALESCE(SUM(p.puntos_merito), 0) AS dkp_total_clan
 FROM Clan c
-         JOIN Personaje p ON c.id_clan = p.id_clan
+         LEFT JOIN Personaje p ON c.id_clan = p.id_clan
 GROUP BY c.id_clan, c.nombre, c.ubicacion
 ORDER BY dkp_total_clan DESC//
 

@@ -64,8 +64,8 @@ public class DataSeeder implements CommandLineRunner {
         Jugador jugador3 = jugadorRepository.save(new Jugador(null, "jugador3", pw, "Usuario"));
 
         // 2. Crear Clanes
-        Clan alianza = clanRepository.save(new Clan(null, "Guardia de la Alianza", 1L, baseAlianza));
-        Clan horda = clanRepository.save(new Clan(null, "Señores de la Horda", 2L, baseHorda));
+        Clan alianza = clanRepository.save(new Clan(null, "Guardia de la Alianza", 1L, "Alianza", baseAlianza));
+        Clan horda = clanRepository.save(new Clan(null, "Señores de la Horda", 2L, "Horda", baseHorda));
 
         // 3. Crear Items Base
         Item pocion = itemRepository.save(new Item(null, "Poción de Bienvenida", 5, 0));
@@ -84,10 +84,10 @@ public class DataSeeder implements CommandLineRunner {
         itemClasePermitidaRepository.save(new ItemClasePermitida(
                 new ItemClasePermitida.ItemClasePermitidaId(baculo.getIdItem(), "Mago"), baculo));
 
-        // 5. Crear Personajes
-        personajeRepository.save(new Personaje(null, admin, alianza,
+        // 5. Crear Personajes (Sin clan inicial, spawneando en las bases principales de su facción)
+        personajeRepository.save(new Personaje(null, admin, null,
                 "Tato_Rey", "Guerrero", 60, "Alianza", 200, 1000, "Tanque", baseAlianza, "Base Alianza"));
-        personajeRepository.save(new Personaje(null, jugador2, horda,
+        personajeRepository.save(new Personaje(null, jugador2, null,
                 "Thrall", "Guerrero", 60, "Horda", 190, 800, "DPS", baseHorda, "Base Horda"));
 
         // 6. Crear Raids (Asignamos coordenadas separadas)

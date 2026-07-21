@@ -67,8 +67,8 @@ function Raids() {
       .catch((error) =>
         alert(
           "Error: " +
-            (error.response?.data ||
-              "No cumples los requisitos o ya estás inscrito."),
+          (error.response?.data ||
+            "No cumples los requisitos o ya estás inscrito."),
         ),
       );
   };
@@ -123,7 +123,7 @@ function Raids() {
             <>
               <p style={{ margin: 0, color: "#81c784", fontSize: "18px" }}>
                 Personaje Activo: <strong>{miPersonaje.nombre}</strong> (Rol:{" "}
-                {miPersonaje.rol_clan})
+                <b>{miPersonaje.rolClan || miPersonaje.rol_clan || miPersonaje.rol || "Sin Rol"}</b>)
               </p>
               <div
                 style={{
@@ -137,7 +137,7 @@ function Raids() {
                 <p style={{ margin: 0, color: "#ff9800", fontSize: "16px" }}>
                   ⚔️ Poder de Combate Total:{" "}
                   <strong style={{ fontSize: "20px" }}>
-                    {miPersonaje.item_level}
+                    {miPersonaje.itemLevel ?? miPersonaje.item_level ?? 0} iLvl
                   </strong>
                 </p>
               </div>
@@ -191,22 +191,22 @@ function Raids() {
             .filter(
               (r) =>
                 r.estado === "Programada" &&
-                r.item_level_requerido >= Ilvfiltro &&
+                (r.item_level_requerido || r.itemLevelRequerido || 0) >= Ilvfiltro &&
                 (Rolfiltro === "Todos" ||
                   r[`cupos_${Rolfiltro.toLowerCase()}`] > 0),
             )
             .map((raid) => {
-              const listadoInscritos = inscritos[raid.id_raid] || [];
+              const listadoInscritos = inscritos[raid.id_raid || raid.idRaid] || [];
               const yoEstoyInscrito = listadoInscritos.some(
                 (ins) => ins[1] === parseInt(activeId),
               );
 
-              const iLvlInsuficiente =
-                miPersonaje &&
-                miPersonaje.item_level < raid.item_level_requerido;
-              const sinCupo =
-                miPersonaje &&
-                raid[`cupos_${miPersonaje.rol_clan.toLowerCase()}`] <= 0;
+              const reqIlvl = raid.item_level_requerido || raid.itemLevelRequerido || 0;
+              const pjIlvl = miPersonaje ? (miPersonaje.itemLevel ?? miPersonaje.item_level ?? 0) : 0;
+              const pjRol = miPersonaje ? (miPersonaje.rolClan || miPersonaje.rol_clan || miPersonaje.rol || "").toLowerCase() : "";
+
+              const iLvlInsuficiente = miPersonaje && pjIlvl < reqIlvl;
+              const sinCupo = miPersonaje && (raid[`cupos_${pjRol}`] ?? raid[`cupos${pjRol.charAt(0).toUpperCase() + pjRol.slice(1)}`] ?? 0) <= 0;
               const botonDeshabilitado =
                 !miPersonaje ||
                 (iLvlInsuficiente && !yoEstoyInscrito) ||
@@ -214,7 +214,7 @@ function Raids() {
 
               return (
                 <div
-                  key={raid.id_raid}
+                  key={raid.id_raid || raid.idRaid}
                   style={{
                     border:
                       iLvlInsuficiente && !yoEstoyInscrito
@@ -232,7 +232,7 @@ function Raids() {
                   </h3>
                   <p style={{ fontSize: "14px", color: "#aaa" }}>
                     Poder Requerido:{" "}
-                    <strong>{raid.item_level_requerido}</strong>
+                    <strong>{raid.item_level_requerido || raid.itemLevelRequerido || 0} iLvl</strong>
                   </p>
 
                   <div

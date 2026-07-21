@@ -41,8 +41,8 @@ public interface ClanRepository extends JpaRepository<Clan, Long> {
     List<Object[]> obtenerAuditoriaLiderazgo();
 
     // --- NUEVA LÓGICA GEOESPACIAL (LAB 2) ---
-    @Query(value = "SELECT * FROM Clan c WHERE c.ubicacion IS NOT NULL AND ST_DWithin(c.ubicacion, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :distancia)", nativeQuery = true)
-    List<Clan> findClanesCercanos(@Param("lon") double lon, @Param("lat") double lat, @Param("distancia") double distancia);
+    @Query(value = "SELECT * FROM Clan c WHERE c.ubicacion IS NOT NULL AND ST_DWithin(c.ubicacion, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :distancia) AND (:faccion IS NULL OR LOWER(c.faccion) = LOWER(:faccion))", nativeQuery = true)
+    List<Clan> findClanesCercanos(@Param("lon") double lon, @Param("lat") double lat, @Param("distancia") double distancia, @Param("faccion") String faccion);
 
     // --- MAPA DE CALOR (LAB 2) ---
     // Extrae las coordenadas separadas (lat, lon) y el dkp total desde la vista materializada
