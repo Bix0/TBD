@@ -46,6 +46,17 @@ public interface ClanRepository extends JpaRepository<Clan, Long> {
     @Query(value = "SELECT * FROM Clan c WHERE c.ubicacion IS NOT NULL AND ST_DWithin(c.ubicacion, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :distancia) AND (:faccion IS NULL OR LOWER(c.faccion) = LOWER(:faccion))", nativeQuery = true)
     List<Clan> findClanesCercanos(@Param("lon") double lon, @Param("lat") double lat, @Param("distancia") double distancia, @Param("faccion") String faccion);
 
+    // Extrae coordenadas planas (ST_Y, ST_X) para consumo directo en mapas/proyecciones
+    @Query(value = """
+        SELECT id_clan, nombre, id_lider,
+               ST_Y(ubicacion::geometry) as latitud,
+               ST_X(ubicacion::geometry) as longitud
+        FROM clan c 
+        WHERE c.ubicacion IS NOT NULL 
+          AND ST_DWithin(c.ubicacion, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :distancia)
+        """, nativeQuery = true)
+    List<Object[]> findClanesCercanosCustom(@Param("lon") double lon, @Param("lat") double lat, @Param("distancia") double distancia);
+
     // --- MAPA DE CALOR (LAB 2) ---
     // Extrae las coordenadas separadas (lat, lon) y el dkp total desde la vista materializada
     @Query(value = "SELECT id_clan, nombre, ST_Y(ubicacion::geometry) as lat, ST_X(ubicacion::geometry) as lon, dkp_total_clan FROM mv_calor_clanes WHERE ubicacion IS NOT NULL", nativeQuery = true)

@@ -196,6 +196,16 @@ public class ClanController {
         return ResponseEntity.ok(clanService.obtenerAuditoriaLiderazgo());
     }
 
+    // 1. Endpoint ligero para Leaflet / Proyecciones GPS
+    @GetMapping("/cercanos-gps")
+    public ResponseEntity<List<Object[]>> getClanesCercanosGPS(
+            @RequestParam double lon,
+            @RequestParam double lat,
+            @RequestParam(defaultValue = "300") double distancia) {
+
+        List<Object[]> clanes = clanRepository.findClanesCercanosCustom(lon, lat, distancia);
+        return ResponseEntity.ok(clanes);
+    }
 
     @GetMapping("/cercanos")
     public ResponseEntity<List<Clan>> getClanesCercanos(
