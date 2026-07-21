@@ -27,11 +27,13 @@ public interface ClanRepository extends JpaRepository<Clan, Long> {
     @Query("SELECT c.idLider FROM Clan c WHERE c.idClan = :idClan")
     Optional<Long> findIdLiderByIdClan(@Param("idClan") Long idClan);
 
-    // Auditoría de liderazgo: join nativo para obtener nombres
+    // Auditoría de liderazgo: join nativo para obtener nombres + coordenadas
     @Query(value = """
         SELECT a.id_auditoria, c.nombre AS clan,
                COALESCE(p1.nombre, 'Nadie') AS antiguo,
-               p2.nombre AS nuevo, a.fecha_cambio
+               p2.nombre AS nuevo, a.fecha_cambio,
+               ST_Y(a.ubicacion_suceso::geometry) as lat,
+               ST_X(a.ubicacion_suceso::geometry) as lon
         FROM auditoria_liderazgo a
         JOIN clan c ON a.id_clan = c.id_clan
         LEFT JOIN personaje p1 ON a.id_antiguo_lider = p1.id_personaje

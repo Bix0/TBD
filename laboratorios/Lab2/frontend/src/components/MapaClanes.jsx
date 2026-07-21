@@ -18,8 +18,22 @@ const playerIcon = new L.Icon({
   popupAnchor: [0, -40],
 });
 
-const MapaClanes = () => {
-  const [modo, setModo] = useState("calor"); // "calor" | "cercanos"
+const currentIcon = new L.Icon({
+  iconUrl: "/sede_current.png",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+});
+
+const oldIcon = new L.Icon({
+  iconUrl: "/sede_old.png",
+  iconSize: [24, 24],
+  iconAnchor: [12, 24],
+  popupAnchor: [0, -24],
+});
+
+const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
+  const [modo, setModo] = useState("calor"); // "calor" | "cercanos" | "sedes"
   const [clanesCalor, setClanesCalor] = useState([]);
   const [clanesCercanos, setClanesCercanos] = useState([]);
   const [personajes, setPersonajes] = useState([]);
@@ -40,7 +54,9 @@ const MapaClanes = () => {
         .then((res) => {
           const list = res.data || [];
           setPersonajes(list);
-          const found = list.find((p) => (p.idPersonaje || p.id_personaje) == activeId);
+          const found = list.find(
+            (p) => (p.idPersonaje || p.id_personaje) == activeId,
+          );
           if (found) {
             setActivePj(found);
           }
@@ -99,21 +115,34 @@ const MapaClanes = () => {
     const pjId = activePj.idPersonaje || activePj.id_personaje;
     const clanId = clan.idClan || clan.id_clan;
 
-    if (activePj.clan && (activePj.clan.idClan || activePj.clan.id_clan) == clanId) {
+    if (
+      activePj.clan &&
+      (activePj.clan.idClan || activePj.clan.id_clan) == clanId
+    ) {
       alert("¡Ya perteneces a este clan!");
       return;
     }
 
-    if (window.confirm(`¿Deseas que ${activePj.nombre} se una al clan "${clan.nombre}"?`)) {
+    if (
+      window.confirm(
+        `¿Deseas que ${activePj.nombre} se una al clan "${clan.nombre}"?`,
+      )
+    ) {
       api
-        .post(`/api/clanes/unirse/${clanId}`, pjId, { headers: { 'Content-Type': 'application/json' } })
+        .post(`/api/clanes/unirse/${clanId}`, pjId, {
+          headers: { "Content-Type": "application/json" },
+        })
         .then(() => {
-          alert(`¡${activePj.nombre} se ha unido exitosamente al clan ${clan.nombre}!`);
+          alert(
+            `¡${activePj.nombre} se ha unido exitosamente al clan ${clan.nombre}!`,
+          );
           if (userId) {
             api.get(`/api/personajes/jugador/${userId}/todos`).then((res) => {
               const list = res.data || [];
               setPersonajes(list);
-              const found = list.find((p) => (p.idPersonaje || p.id_personaje) == activeId);
+              const found = list.find(
+                (p) => (p.idPersonaje || p.id_personaje) == activeId,
+              );
               if (found) setActivePj(found);
             });
           }
@@ -156,7 +185,9 @@ const MapaClanes = () => {
       >
         {/* Selector de Modo */}
         <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-          <label style={{ fontWeight: "bold", color: "#aaa", fontSize: "14px" }}>
+          <label
+            style={{ fontWeight: "bold", color: "#aaa", fontSize: "14px" }}
+          >
             Visualización:
           </label>
           <button
@@ -189,24 +220,65 @@ const MapaClanes = () => {
           >
             📍 Clanes Cercanos (Radio GPS)
           </button>
+          <button
+            onClick={() => setModo("sedes")}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: modo === "sedes" ? "#ffd700" : "#333",
+              color: modo === "sedes" ? "#000" : "white",
+              border: "none",
+              borderRadius: "4px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              transition: "0.2s",
+            }}
+          >
+            👑 Sedes de Poder
+          </button>
         </div>
 
         {/* Único filtro permitido en modo Clanes Cercanos: Radio de Distancia */}
         {modo === "cercanos" && (
-          <div style={{ display: "flex", gap: "15px", flexWrap: "wrap", alignItems: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "15px",
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
             {activePj && (
-              <div style={{ fontSize: "13px", color: "#61dafb", backgroundColor: "#1e293b", padding: "6px 12px", borderRadius: "6px", border: "1px solid #3b82f6" }}>
-                🧑 <b>{activePj.nombre}</b> ({activePj.faccion}) | Posición: Y={activePj.latitud}, X={activePj.longitud}
+              <div
+                style={{
+                  fontSize: "13px",
+                  color: "#61dafb",
+                  backgroundColor: "#1e293b",
+                  padding: "6px 12px",
+                  borderRadius: "6px",
+                  border: "1px solid #3b82f6",
+                }}
+              >
+                🧑 <b>{activePj.nombre}</b> ({activePj.faccion}) | Posición: Y=
+                {activePj.latitud}, X={activePj.longitud}
               </div>
             )}
             <div>
-              <label style={{ fontSize: "12px", color: "#aaa", display: "block", marginBottom: "2px" }}>
+              <label
+                style={{
+                  fontSize: "12px",
+                  color: "#aaa",
+                  display: "block",
+                  marginBottom: "2px",
+                }}
+              >
                 Radio Distancia (Uds)
               </label>
               <input
                 type="number"
                 value={distancia}
-                onChange={(e) => setDistancia(Math.max(10, parseInt(e.target.value) || 0))}
+                onChange={(e) =>
+                  setDistancia(Math.max(10, parseInt(e.target.value) || 0))
+                }
                 step="50"
                 min="10"
                 max="2000"
@@ -226,8 +298,20 @@ const MapaClanes = () => {
 
       {/* MENSAJE DE ADVERTENCIA SI NO HAY PERSONAJE ACTIVO EN MODO CERCANOS */}
       {modo === "cercanos" && !activePj && (
-        <div style={{ backgroundColor: "#332a00", border: "1px solid #ffcc00", color: "#ffea79", padding: "12px", borderRadius: "6px", textAlign: "center", fontSize: "14px" }}>
-          ⚠️ No tienes un personaje activo seleccionado. Ve a la sección <b>Personajes</b> para activar uno y buscar clanes cercanos a su ubicación.
+        <div
+          style={{
+            backgroundColor: "#332a00",
+            border: "1px solid #ffcc00",
+            color: "#ffea79",
+            padding: "12px",
+            borderRadius: "6px",
+            textAlign: "center",
+            fontSize: "14px",
+          }}
+        >
+          ⚠️ No tienes un personaje activo seleccionado. Ve a la sección{" "}
+          <b>Personajes</b> para activar uno y buscar clanes cercanos a su
+          ubicación.
         </div>
       )}
 
@@ -237,10 +321,16 @@ const MapaClanes = () => {
         bounds={bounds}
         maxBounds={bounds}
         maxBoundsViscosity={1.0}
-        style={{ height: "650px", width: "100%", borderRadius: "8px", overflow: "hidden", backgroundColor: "#000" }}
+        style={{
+          height: "650px",
+          width: "100%",
+          borderRadius: "8px",
+          overflow: "hidden",
+          backgroundColor: "#000",
+        }}
         className="leaflet-container"
       >
-        <ImageOverlay url="/mapa-juego.jpg" bounds={bounds} />
+        <ImageOverlay url="/mapa_juego.png" bounds={bounds} />
 
         {/* Renderizar Jugador Activo */}
         {activePj && activePj.latitud != null && activePj.longitud != null && (
@@ -256,7 +346,15 @@ const MapaClanes = () => {
                 <br />
                 Facción: {activePj.faccion} | Nivel: {activePj.nivel}
                 <br />
-                Poder: <b>{activePj.itemLevel ?? activePj.item_level ?? 0} iLvl</b> | Rol: <b>{activePj.rolClan || activePj.rol_clan || activePj.rol || "Sin Rol"}</b>
+                Poder:{" "}
+                <b>{activePj.itemLevel ?? activePj.item_level ?? 0} iLvl</b> |
+                Rol:{" "}
+                <b>
+                  {activePj.rolClan ||
+                    activePj.rol_clan ||
+                    activePj.rol ||
+                    "Sin Rol"}
+                </b>
                 <br />
                 Coordenadas: Y={activePj.latitud}, X={activePj.longitud}
               </div>
@@ -280,7 +378,12 @@ const MapaClanes = () => {
                 }}
                 radius={calcularRadioCalor(dkpTotal)}
               >
-                <Tooltip direction="top" offset={[0, -10]} opacity={0.9} permanent={false}>
+                <Tooltip
+                  direction="top"
+                  offset={[0, -10]}
+                  opacity={0.9}
+                  permanent={false}
+                >
                   <span style={{ fontWeight: "bold", color: "#aa3bff" }}>
                     {nombre} ({dkpTotal} DKP)
                   </span>
@@ -300,103 +403,169 @@ const MapaClanes = () => {
           })}
 
         {/* MODO 2: CLANES CERCANOS (ST_DWithin) */}
-        {modo === "cercanos" && activePj && activePj.latitud != null && activePj.longitud != null && (
-          <>
-            {/* Círculo visual mostrando el radio de búsqueda de PostGIS centrado en el personaje activo */}
-            <CircleMarker
-              center={[activePj.latitud, activePj.longitud]}
-              pathOptions={{
-                color: activePj.faccion === "Alianza" ? "#2196f3" : "#f44336",
-                fillColor: activePj.faccion === "Alianza" ? "#2196f3" : "#f44336",
-                fillOpacity: 0.15,
-                dashArray: "6, 6",
-              }}
-              radius={distancia / 2}
-            >
-              <Tooltip permanent direction="bottom">
-                <span style={{ fontSize: "11px", color: activePj.faccion === "Alianza" ? "#2196f3" : "#ff4b4b" }}>
-                  Radio de búsqueda: {distancia} uds ({activePj.faccion})
-                </span>
-              </Tooltip>
-            </CircleMarker>
+        {modo === "cercanos" &&
+          activePj &&
+          activePj.latitud != null &&
+          activePj.longitud != null && (
+            <>
+              {/* Círculo visual mostrando el radio de búsqueda de PostGIS centrado en el personaje activo */}
+              <CircleMarker
+                center={[activePj.latitud, activePj.longitud]}
+                pathOptions={{
+                  color: activePj.faccion === "Alianza" ? "#2196f3" : "#f44336",
+                  fillColor:
+                    activePj.faccion === "Alianza" ? "#2196f3" : "#f44336",
+                  fillOpacity: 0.15,
+                  dashArray: "6, 6",
+                }}
+                radius={distancia / 2}
+              >
+                <Tooltip permanent direction="bottom">
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color:
+                        activePj.faccion === "Alianza" ? "#2196f3" : "#ff4b4b",
+                    }}
+                  >
+                    Radio de búsqueda: {distancia} uds ({activePj.faccion})
+                  </span>
+                </Tooltip>
+              </CircleMarker>
 
-            {/* Renderizar clanes cercanos de la misma facción devueltos por la API */}
-            {clanesCercanos.map((clan, index) => {
-              const lat = clan.latitud;
-              const lon = clan.longitud;
-              if (lat == null || lon == null) return null;
+              {/* Renderizar clanes cercanos de la misma facción devueltos por la API */}
+              {clanesCercanos.map((clan, index) => {
+                const lat = clan.latitud;
+                const lon = clan.longitud;
+                if (lat == null || lon == null) return null;
 
-              const esAlianza = clan.faccion === "Alianza";
-              const colorClan = esAlianza ? "#2196f3" : "#f44336";
+                const esAlianza = clan.faccion === "Alianza";
+                const colorClan = esAlianza ? "#2196f3" : "#f44336";
 
-              const clanId = clan.idClan || clan.id_clan;
-              const yaEsMiembro = activePj.clan && (activePj.clan.idClan || activePj.clan.id_clan) == clanId;
+                const clanId = clan.idClan || clan.id_clan;
+                const yaEsMiembro =
+                  activePj.clan &&
+                  (activePj.clan.idClan || activePj.clan.id_clan) == clanId;
 
-              return (
-                <CircleMarker
-                  key={`cercanos-${clanId || index}`}
-                  center={[lat, lon]}
-                  pathOptions={{
-                    color: colorClan,
-                    fillColor: colorClan,
-                    fillOpacity: 0.8,
-                  }}
-                  radius={18}
-                >
-                  <Tooltip direction="top" offset={[0, -10]} opacity={0.9} permanent={false}>
-                    <span style={{ fontWeight: "bold", color: colorClan }}>
-                      {esAlianza ? "🛡️" : "🪓"} {clan.nombre}
-                    </span>
-                  </Tooltip>
-                  <Popup>
-                    <div style={{ textAlign: "center", minWidth: "160px" }}>
-                      <strong style={{ color: colorClan, fontSize: "16px" }}>
-                        {clan.nombre}
-                      </strong>
-                      <hr style={{ borderColor: "#444", margin: "5px 0" }} />
-                      Facción: <b>{clan.faccion}</b>
-                      <br />
-                      Coordenadas: Y={lat}, X={lon}
-                      <hr style={{ borderColor: "#444", margin: "8px 0" }} />
-                      {yaEsMiembro ? (
-                        <span style={{ color: "#4caf50", fontWeight: "bold", fontSize: "13px" }}>
-                          ✅ Ya perteneces a este clan
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => unirseAlClan(clan)}
-                          style={{
-                            width: "100%",
-                            padding: "6px 12px",
-                            backgroundColor: "#2196f3",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            fontWeight: "bold",
-                            cursor: "pointer",
-                          }}
-                        >
-                          🏰 Unirse al Clan
-                        </button>
-                      )}
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              );
-            })}
-          </>
-        )}
+                return (
+                  <CircleMarker
+                    key={`cercanos-${clanId || index}`}
+                    center={[lat, lon]}
+                    pathOptions={{
+                      color: colorClan,
+                      fillColor: colorClan,
+                      fillOpacity: 0.8,
+                    }}
+                    radius={18}
+                  >
+                    <Tooltip
+                      direction="top"
+                      offset={[0, -10]}
+                      opacity={0.9}
+                      permanent={false}
+                    >
+                      <span style={{ fontWeight: "bold", color: colorClan }}>
+                        {esAlianza ? "🛡️" : "🪓"} {clan.nombre}
+                      </span>
+                    </Tooltip>
+                    <Popup>
+                      <div style={{ textAlign: "center", minWidth: "160px" }}>
+                        <strong style={{ color: colorClan, fontSize: "16px" }}>
+                          {clan.nombre}
+                        </strong>
+                        <hr style={{ borderColor: "#444", margin: "5px 0" }} />
+                        Facción: <b>{clan.faccion}</b>
+                        <br />
+                        Coordenadas: Y={lat}, X={lon}
+                        <hr style={{ borderColor: "#444", margin: "8px 0" }} />
+                        {yaEsMiembro ? (
+                          <span
+                            style={{
+                              color: "#4caf50",
+                              fontWeight: "bold",
+                              fontSize: "13px",
+                            }}
+                          >
+                            ✅ Ya perteneces a este clan
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => unirseAlClan(clan)}
+                            style={{
+                              width: "100%",
+                              padding: "6px 12px",
+                              backgroundColor: "#2196f3",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              fontWeight: "bold",
+                              cursor: "pointer",
+                            }}
+                          >
+                            🏰 Unirse al Clan
+                          </button>
+                        )}
+                      </div>
+                    </Popup>
+                  </CircleMarker>
+                );
+              })}
+            </>
+          )}
+
+        {/* MODO 3: SEDES DE PODER */}
+        {modo === "sedes" &&
+          auditoria.map((fila, i) => {
+            const lat = parseFloat(fila[5]);
+            const lon = parseFloat(fila[6]);
+            if (isNaN(lat) || isNaN(lon) || (lat === 0 && lon === 0))
+              return null;
+            return (
+              <Marker
+                key={`sede-${i}`}
+                position={[lat, lon]}
+                icon={
+                  fila[3] === liderAlianza || fila[3] === liderHorda
+                    ? currentIcon
+                    : oldIcon
+                }
+              >
+                <Popup>
+                  <div style={{ textAlign: "center", minWidth: "180px" }}>
+                    <strong style={{ color: "#ffd700", fontSize: "16px" }}>
+                      👑 {fila[2]} → {fila[3]}
+                    </strong>
+                    <hr style={{ borderColor: "#444", margin: "5px 0" }} />
+                    <b>Clan:</b> {fila[1]}
+                    <br />
+                    <b>Fecha:</b> {new Date(fila[4]).toLocaleString()}
+                    <br />
+                    <b>Ubicación:</b> Y={lat}, X={lon}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
       </MapContainer>
 
       {/* RESUMEN/INFO INFERIOR */}
       <div style={{ fontSize: "13px", color: "#aaa", textAlign: "center" }}>
         {modo === "calor" ? (
           <p>
-            🔥 Mostrando <b>{clanesCalor.length}</b> clanes clasificados por volumen de DKP acumulado.
+            🔥 Mostrando <b>{clanesCalor.length}</b> clanes clasificados por
+            volumen de DKP acumulado.
+          </p>
+        ) : modo === "cercanos" ? (
+          <p>
+            📍 Mostrando <b>{clanesCercanos.length}</b> clanes de la facción{" "}
+            <b>{activePj?.faccion || "N/A"}</b> dentro de un radio de{" "}
+            <b>{distancia}</b> uds desde tu posición (Y={activePj?.latitud}, X=
+            {activePj?.longitud}).
           </p>
         ) : (
           <p>
-            📍 Mostrando <b>{clanesCercanos.length}</b> clanes de la facción <b>{activePj?.faccion || "N/A"}</b> dentro de un radio de <b>{distancia}</b> uds desde tu posición (Y={activePj?.latitud}, X={activePj?.longitud}).
+            👑 Mostrando <b>{auditoria.filter((f) => f[5] != null).length}</b>{" "}
+            sedes de poder registradas en cambios de liderazgo.
           </p>
         )}
       </div>

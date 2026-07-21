@@ -176,10 +176,23 @@ function Facciones() {
           <h2 style={{ textAlign: "center", color: "#61dafb", marginTop: 0 }}>
             🗺️ Mapa Geoespacial y Análisis de Clanes
           </h2>
-          <p style={{ color: "#aaa", fontSize: "14px", marginBottom: "15px", textAlign: "center" }}>
-            Alterna entre la visualización de <b>Mapa de Calor por DKP</b> o realiza búsquedas de <b>Clanes Cercanos (PostGIS ST_DWithin)</b> en tiempo real.
+          <p
+            style={{
+              color: "#aaa",
+              fontSize: "14px",
+              marginBottom: "15px",
+              textAlign: "center",
+            }}
+          >
+            Alterna entre la visualización de <b>Mapa de Calor por DKP</b> o
+            realiza búsquedas de <b>Clanes Cercanos (PostGIS ST_DWithin)</b> en
+            tiempo real.
           </p>
-          <MapaClanes />
+          <MapaClanes
+            auditoria={auditoria}
+            liderAlianza={alianza[0]?.nombre}
+            liderHorda={horda[0]?.nombre}
+          />
         </div>
       </div>
     </div>

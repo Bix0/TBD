@@ -62,12 +62,15 @@ function PlayerMovementController({ activePersonajeId, onMove }) {
       const { lat, lng } = e.latlng;
       const roundedLat = Math.round(lat);
       const roundedLng = Math.round(lng);
-      
-      api.patch(`/api/personajes/${activePersonajeId}/mover?latitud=${roundedLat}&longitud=${roundedLng}`)
+
+      api
+        .patch(
+          `/api/personajes/${activePersonajeId}/mover?latitud=${roundedLat}&longitud=${roundedLng}`,
+        )
         .then(() => {
           onMove(activePersonajeId, roundedLat, roundedLng);
         })
-        .catch(err => console.error("Error moviendo personaje:", err));
+        .catch((err) => console.error("Error moviendo personaje:", err));
     },
   });
   return null;
@@ -97,7 +100,7 @@ const MapaRaids = () => {
           idPersonaje: personajeId || undefined,
           lon: mapCenter.lng,
           lat: mapCenter.lat,
-          distancia: 2000, 
+          distancia: 2000,
         },
       })
       .then((response) => setRaids(response.data || []))
@@ -126,7 +129,9 @@ const MapaRaids = () => {
       .then((res) => {
         setTodosPersonajesMapa(res.data || []);
       })
-      .catch((err) => console.error("Error cargando personajes en el mapa:", err));
+      .catch((err) =>
+        console.error("Error cargando personajes en el mapa:", err),
+      );
   }, []);
 
   const inscribir = async (idRaid) => {
@@ -146,31 +151,38 @@ const MapaRaids = () => {
   };
 
   const handlePersonajeMoved = (id, lat, lng) => {
-    setPersonajes(prev => prev.map(p => {
-      if ((p.idPersonaje || p.id_personaje) == id) {
-        return { ...p, latitud: lat, longitud: lng };
-      }
-      return p;
-    }));
-    
+    setPersonajes((prev) =>
+      prev.map((p) => {
+        if ((p.idPersonaje || p.id_personaje) == id) {
+          return { ...p, latitud: lat, longitud: lng };
+        }
+        return p;
+      }),
+    );
+
     // Actualizar también en la lista general del mapa
-    setTodosPersonajesMapa(prev => prev.map(p => {
-      if ((p.idPersonaje || p.id_personaje) == id) {
-        return { ...p, latitud: lat, longitud: lng };
-      }
-      return p;
-    }));
+    setTodosPersonajesMapa((prev) =>
+      prev.map((p) => {
+        if ((p.idPersonaje || p.id_personaje) == id) {
+          return { ...p, latitud: lat, longitud: lng };
+        }
+        return p;
+      }),
+    );
 
     setMapCenter({ lat, lng });
   };
 
   // Filtrar personajes para el mapa según los criterios de búsqueda
-  const personajesFiltrados = todosPersonajesMapa.filter(p => {
+  const personajesFiltrados = todosPersonajesMapa.filter((p) => {
     const nombre = p.nombre || "";
     const rol = p.rolClan || p.rol_clan || "";
-    
-    const cumpleNombre = nombre.toLowerCase().includes(filtroNombre.toLowerCase());
-    const cumpleRol = filtroRol === "" || rol.toLowerCase().includes(filtroRol.toLowerCase());
+
+    const cumpleNombre = nombre
+      .toLowerCase()
+      .includes(filtroNombre.toLowerCase());
+    const cumpleRol =
+      filtroRol === "" || rol.toLowerCase().includes(filtroRol.toLowerCase());
 
     return cumpleNombre && cumpleRol;
   });
@@ -200,8 +212,10 @@ const MapaRaids = () => {
           alignItems: "center",
         }}
       >
-        <strong style={{ color: "#61dafb", fontSize: "14px" }}>🔍 Filtros Mapa:</strong>
-        
+        <strong style={{ color: "#61dafb", fontSize: "14px" }}>
+          🔍 Filtros Mapa:
+        </strong>
+
         <input
           type="text"
           placeholder="Buscar por nombre..."
@@ -245,17 +259,17 @@ const MapaRaids = () => {
         className="leaflet-container"
       >
         <RaidMapController onCenterChange={setMapCenter} />
-        <PlayerMovementController 
-          activePersonajeId={activeId || selectedPersonaje} 
-          onMove={handlePersonajeMoved} 
+        <PlayerMovementController
+          activePersonajeId={activeId || selectedPersonaje}
+          onMove={handlePersonajeMoved}
         />
-        <ImageOverlay url="/mapa-juego.jpg" bounds={bounds} />
+        <ImageOverlay url="/mapa_juego.png" bounds={bounds} />
 
         {/* Renderizar todos los demás personajes filtrados en el mapa */}
         {personajesFiltrados.map((p) => {
           const pId = p.idPersonaje || p.id_personaje;
           const activeCurrentId = activeId || selectedPersonaje;
-          
+
           // Si es el jugador activo, ya se renderiza abajo con su icono especial o se puede omitir para evitar duplicado
           if (pId == activeCurrentId) return null;
 
@@ -265,7 +279,11 @@ const MapaRaids = () => {
           if (lat == null || lon == null) return null;
 
           return (
-            <Marker key={`p-${pId}`} position={[lat, lon]} icon={otherPlayerIcon}>
+            <Marker
+              key={`p-${pId}`}
+              position={[lat, lon]}
+              icon={otherPlayerIcon}
+            >
               <Popup>
                 <div style={{ textAlign: "center" }}>
                   <strong style={{ color: "#ffaa00", fontSize: "15px" }}>

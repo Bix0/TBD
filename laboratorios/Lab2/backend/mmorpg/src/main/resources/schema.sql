@@ -141,6 +141,11 @@ BEGIN
         -- Capturar la ubicación GPS del nuevo líder
         SELECT ubicacion_actual INTO v_ubicacion_acto FROM Personaje WHERE id_personaje = NEW.id_lider;
 
+        -- Si el personaje no tiene ubicación, usar la sede del clan
+        IF v_ubicacion_acto IS NULL THEN
+            SELECT ubicacion INTO v_ubicacion_acto FROM Clan WHERE id_clan = NEW.id_clan;
+        END IF;
+
         INSERT INTO Auditoria_Liderazgo (id_clan, id_antiguo_lider, id_nuevo_lider, fecha_cambio, ubicacion_suceso)
         VALUES (NEW.id_clan, OLD.id_lider, NEW.id_lider, NOW(), v_ubicacion_acto);
     END IF;
