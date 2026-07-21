@@ -60,6 +60,9 @@ function PanelAdmin() {
   });
   const [bossCoords, setBossCoords] = useState({ lat: 500, lng: 500 });
 
+  const [personajeMover, setPersonajeMover] = useState("");
+  const [moverCoords, setMoverCoords] = useState({ lat: 500, lng: 500 });
+
   const [godDkp, setGodDkp] = useState({ idPersonaje: "", cantidad: 0 });
   const [godLoot, setGodLoot] = useState({
     idPersonaje: "",
@@ -132,6 +135,17 @@ function PanelAdmin() {
             (err.response?.data || err.message),
         );
       });
+  };
+
+  const handleMoverPersonaje = (e) => {
+    e.preventDefault();
+    if (!personajeMover) return alert("Selecciona un personaje para mover.");
+    api.patch(`/api/personajes/${personajeMover}/mover?latitud=${moverCoords.lat}&longitud=${moverCoords.lng}`)
+      .then(() => {
+        alert("Personaje movido con éxito.");
+        cargarDatosAdmin();
+      })
+      .catch(err => alert("Error moviendo personaje: " + (err.response?.data || err.message)));
   };
 
   const handleItemSubmit = (e) => {
@@ -317,6 +331,61 @@ function PanelAdmin() {
             border: "1px dashed #00e676",
           }}
         >
+          {/* BOTÓN MODO DIOS MOVER PERSONAJE */}
+          <form
+            onSubmit={handleMoverPersonaje}
+            style={{ display: "flex", gap: "10px", marginBottom: "15px", alignItems: "center" }}
+          >
+            <select
+              value={personajeMover}
+              onChange={(e) => setPersonajeMover(e.target.value)}
+              required
+              style={{
+                flex: 2,
+                padding: "8px",
+                backgroundColor: "#333",
+                color: "white",
+              }}
+            >
+              <option value="">-- Mover Personaje --</option>
+              {personajes.map((p) => (
+                <option key={p.id_personaje || p.idPersonaje} value={p.id_personaje || p.idPersonaje}>
+                  {p.nombre} (Y: {Math.round(p.latitud || 0)}, X: {Math.round(p.longitud || 0)})
+                </option>
+              ))}
+            </select>
+            <div style={{ display: "flex", gap: "5px", flex: 2 }}>
+              <input
+                type="number"
+                placeholder="Latitud (Y)"
+                value={moverCoords.lat}
+                onChange={(e) => setMoverCoords({ ...moverCoords, lat: parseInt(e.target.value) || 0 })}
+                style={{ flex: 1, padding: "8px", backgroundColor: "#333", color: "white" }}
+              />
+              <input
+                type="number"
+                placeholder="Longitud (X)"
+                value={moverCoords.lng}
+                onChange={(e) => setMoverCoords({ ...moverCoords, lng: parseInt(e.target.value) || 0 })}
+                style={{ flex: 1, padding: "8px", backgroundColor: "#333", color: "white" }}
+              />
+            </div>
+            <button
+              type="submit"
+              style={{
+                flex: 1,
+                backgroundColor: "#42a5f5",
+                color: "black",
+                fontWeight: "bold",
+                border: "none",
+                cursor: "pointer",
+                padding: "8px"
+              }}
+            >
+              Teletransportar
+            </button>
+          </form>
+
           <form
             onSubmit={handleGodDkp}
             style={{ display: "flex", gap: "10px", marginBottom: "15px" }}

@@ -192,4 +192,21 @@ public class PersonajeController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    /**
+     * Mueve espacialmente a un personaje (Actualiza Geometría)
+     * PATCH /api/personajes/{id}/mover?latitud=Y&longitud=X
+     */
+    @PatchMapping("/{id}/mover")
+    public ResponseEntity<Void> moverPersonaje(
+            @PathVariable Long id,
+            @RequestParam Double latitud,
+            @RequestParam Double longitud) {
+        try {
+            personajeService.moverPersonaje(id, latitud, longitud);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

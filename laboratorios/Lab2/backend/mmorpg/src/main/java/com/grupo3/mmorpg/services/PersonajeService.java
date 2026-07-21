@@ -144,4 +144,12 @@ public class PersonajeService {
         }
         return personajeRepository.findHealersCercanos(tank.getLongitud(), tank.getLatitud(), distancia);
     }
+
+    @Transactional
+    public void moverPersonaje(Long idPersonaje, Double latitud, Double longitud) {
+        Personaje personaje = personajeRepository.findById(idPersonaje)
+                .orElseThrow(() -> new IllegalArgumentException("Personaje no encontrado"));
+        personaje.setUbicacionActual(geometryFactory.createPoint(new Coordinate(longitud, latitud)));
+        personajeRepository.save(personaje);
+    }
 }

@@ -5,6 +5,7 @@ import {
   Marker,
   Popup,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -43,6 +44,24 @@ function RaidMapController({ onCenterChange }) {
     };
   }, [map, onCenterChange]);
 
+  return null;
+}
+
+function PlayerMovementController({ activePersonajeId, onMove }) {
+  useMapEvents({
+    click(e) {
+      if (!activePersonajeId) return;
+      const { lat, lng } = e.latlng;
+      const roundedLat = Math.round(lat);
+      const roundedLng = Math.round(lng);
+      
+      api.patch(`/api/personajes/${activePersonajeId}/mover?latitud=${roundedLat}&longitud=${roundedLng}`)
+        .then(() => {
+          onMove(activePersonajeId, roundedLat, roundedLng);
+        })
+        .catch(err => console.error("Error moviendo personaje:", err));
+    },
+  });
   return null;
 }
 
@@ -100,6 +119,17 @@ const MapaRaids = () => {
     }
   };
 
+  const handlePersonajeMoved = (id, lat, lng) => {
+    setPersonajes(prev => prev.map(p => {
+      if ((p.idPersonaje || p.id_personaje) == id) {
+        return { ...p, latitud: lat, longitud: lng };
+      }
+      return p;
+    }));
+    // Actualizar el centro del mapa no es estrictamente necesario, pero refrescamos las raids
+    setMapCenter({ lat, lng });
+  };
+
   const bounds = [
     [0, 0],
     [1000, 1000],
@@ -115,6 +145,10 @@ const MapaRaids = () => {
       className="leaflet-container"
     >
       <RaidMapController onCenterChange={setMapCenter} />
+      <PlayerMovementController 
+        activePersonajeId={activeId || selectedPersonaje} 
+        onMove={handlePersonajeMoved} 
+      />
       <ImageOverlay url="/mapa-juego.jpg" bounds={bounds} />
 
       {/* Renderizar jugador activo */}
