@@ -11,6 +11,10 @@ function Raids() {
   const [miPersonaje, setMiPersonaje] = useState(null);
   const [inscritos, setInscritos] = useState({});
 
+  // ESTADOS AGREGADOS PARA BUSCAR HEALERS
+  const [healersCercanos, setHealersCercanos] = useState([]);
+  const [cargandoHealers, setCargandoHealers] = useState(false);
+
   const activeId = localStorage.getItem("activePersonajeId");
   const token = localStorage.getItem("token");
   const configSeguridad = { headers: { Authorization: `Bearer ${token}` } };
@@ -94,6 +98,24 @@ function Raids() {
     }
   };
 
+  // FUNCIÓN AGREGADA PARA BUSCAR HEALERS
+  const buscarHealers = async () => {
+    if (!activeId) return alert("Selecciona un personaje activo primero.");
+    setCargandoHealers(true);
+
+    try {
+      const res = await axios.get(`/api/personajes/healers-disponibles`, {
+        ...configSeguridad,
+        params: { tankId: activeId, distancia: 500 }
+      });
+      setHealersCercanos(res.data || []);
+    } catch (err) {
+      alert("Error o no se encontraron healers cerca: " + (err.response?.data || err.message));
+    } finally {
+      setCargandoHealers(false);
+    }
+  };
+
   return (
     <div
       style={{ backgroundColor: "#121212", minHeight: "100vh", color: "white" }}
@@ -170,6 +192,33 @@ function Raids() {
             cerca de tu ubicación.
           </p>
           <MapaRaids />
+        </div>
+
+        {/* ==================================================== */}
+        {/* --- PANEL DE COBERTURA MÉDICA (HEALERS CERCANOS) --- */}
+        {/* ==================================================== */}
+        <div style={{ backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', border: '1px solid #81c784', marginTop: '20px', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ color: '#81c784', margin: 0 }}>🆘 Cobertura Médica (Healers Cercanos)</h3>
+            <button 
+              onClick={buscarHealers} 
+              style={{ padding: '8px 15px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+            >
+              {cargandoHealers ? "Escaneando PostGIS..." : "Buscar Healers a 500m"}
+            </button>
+          </div>
+
+          {healersCercanos.length > 0 && (
+            <div style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              {healersCercanos.map((h) => (
+                <div key={h.idPersonaje || h.id_personaje} style={{ backgroundColor: '#242424', padding: '10px', borderRadius: '6px', borderLeft: '3px solid #81c784' }}>
+                  <strong style={{ color: '#fff' }}>💚 {h.nombre}</strong> ({h.clase})
+                  <br />
+                  <span style={{ fontSize: '12px', color: '#aaa' }}>iLvl: {h.itemLevel || h.item_level} | Rol: {h.rolClan || h.rol_clan}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <RaidFilterBar
