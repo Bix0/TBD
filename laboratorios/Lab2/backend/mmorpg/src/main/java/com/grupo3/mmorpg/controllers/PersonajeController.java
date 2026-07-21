@@ -22,7 +22,6 @@ public class PersonajeController {
         this.personajeService = personajeService;
     }
 
-
     // CRUD BASICOS
     /**
      * Crea un nuevo personaje
@@ -183,7 +182,7 @@ public class PersonajeController {
      */
     @GetMapping("/healers-disponibles")
     public ResponseEntity<List<Personaje>> obtenerHealersDisponibles(
-            @RequestParam Long tankId, 
+            @RequestParam Long tankId,
             @RequestParam(defaultValue = "500.0") double distancia) {
         try {
             List<Personaje> healers = personajeService.obtenerHealersDisponibles(tankId, distancia);
@@ -208,5 +207,23 @@ public class PersonajeController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    /**
+     * Obtiene todos los personajes con ubicación para el mapa general
+     * GET /api/personajes/mapa
+     */
+    @GetMapping("/mapa")
+    public List<Personaje> obtenerPersonajesConUbicacion() {
+        return personajeService.obtenerPersonajesConUbicacion();
+    }
+
+    /**
+     * Obtiene personajes filtrados por rol para mostrar en el mapa interactivo
+     * GET /api/personajes/mapa/rol/{rol}
+     */
+    @GetMapping("/mapa/rol/{rol}")
+    public List<Personaje> obtenerPersonajesPorRolEnMapa(@PathVariable String rol) {
+        return personajeService.obtenerPersonajesPorRolEnMapa(rol);
     }
 }

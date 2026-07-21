@@ -1,19 +1,8 @@
--- ============================================
--- schema.sql para Lab2 (JPA + Hibernate Spatial)
--- ============================================
--- NOTA: Las tablas son creadas por Hibernate (ddl-auto=update)
--- Este archivo solo contiene objetos que JPA NO maneja:
---   - Extensiones PostGIS
---   - Índices adicionales y ESPACIALES
---   - Procedimientos almacenados (Normales y Espaciales)
---   - Vistas materializadas
---   - Triggers + funciones
--- ============================================
 
 -- 0. EXTENSIÓN POSTGIS (necesaria para tipos espaciales)
 CREATE EXTENSION IF NOT EXISTS postgis//
 
--- 1. ÍNDICES DE RENDIMIENTO Y ESPACIALES (Obligatorios Lab 2)
+-- 1. ÍNDICES DE RENDIMIENTO Y ESPACIALES
 -- Originales
 CREATE INDEX IF NOT EXISTS idx_personaje_clase ON Personaje(clase)//
 CREATE INDEX IF NOT EXISTS idx_inscripcion_raid ON Inscripcion_Raid(id_raid)//
@@ -36,7 +25,7 @@ WHERE i.asistio = TRUE
 GROUP BY p.id_personaje, p.nombre, p.clase, p.puntos_merito
 ORDER BY total_raids_asistidas DESC, dkp_actual DESC//
 
--- Nueva Lab 2 (Mapa de Calor de Clanes)
+
 DROP MATERIALIZED VIEW IF EXISTS mv_calor_clanes CASCADE//
 CREATE MATERIALIZED VIEW mv_calor_clanes AS
 SELECT c.id_clan, c.nombre, c.ubicacion,
@@ -50,7 +39,7 @@ ORDER BY dkp_total_clan DESC//
 DROP PROCEDURE IF EXISTS sp_distribuir_botin(INT, INT, INT, INT)//
 DROP PROCEDURE IF EXISTS sp_distribuir_botin(BIGINT, BIGINT, BIGINT, INT)//
 
--- Modificado Lab 2: Validación de distancia espacial con PostGIS
+-- Validación de distancia espacial con PostGIS
 CREATE OR REPLACE PROCEDURE sp_distribuir_botin(
     p_id_personaje BIGINT, p_id_item BIGINT, p_id_raid BIGINT, p_costo_dkp INT
 )
@@ -96,7 +85,7 @@ BEGIN
 END;
 $$//
 
--- Lab 2: Distribuir Botín por Proximidad (50 uds del boss)
+-- Distribuir Botín por Proximidad (50 uds del boss)
 DROP PROCEDURE IF EXISTS sp_distribuir_botin_proximidad(BIGINT, BIGINT, INT)//
 CREATE OR REPLACE PROCEDURE sp_distribuir_botin_proximidad(
     p_id_raid BIGINT, p_id_item BIGINT, p_costo_dkp INT
@@ -143,7 +132,7 @@ $$ LANGUAGE plpgsql//
 DROP TRIGGER IF EXISTS trg_validar_ilvl ON Inscripcion_Raid//
 CREATE TRIGGER trg_validar_ilvl BEFORE INSERT ON Inscripcion_Raid FOR EACH ROW EXECUTE FUNCTION fn_validar_item_level()//
 
--- T2: Auditar Liderazgo (Modificado Lab 2: Historial de Reyes con coordenadas)
+-- T2: Auditar Liderazgo ( Historial de Reyes con coordenadas)
 CREATE OR REPLACE FUNCTION fn_auditar_liderazgo() RETURNS TRIGGER AS $$
 DECLARE
     v_ubicacion_acto GEOMETRY;

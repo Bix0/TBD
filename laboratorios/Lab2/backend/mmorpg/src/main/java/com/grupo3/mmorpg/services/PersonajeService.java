@@ -6,12 +6,12 @@ import com.grupo3.mmorpg.repositories.PersonajeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Servicio para operaciones de negocio relacionadas con Personajes
@@ -151,5 +151,14 @@ public class PersonajeService {
                 .orElseThrow(() -> new IllegalArgumentException("Personaje no encontrado"));
         personaje.setUbicacionActual(geometryFactory.createPoint(new Coordinate(longitud, latitud)));
         personajeRepository.save(personaje);
+    }
+
+
+    public List<Personaje> obtenerPersonajesConUbicacion() {
+        return personajeRepository.findAllConUbicacion();
+    }
+
+    public List<Personaje> obtenerPersonajesPorRolEnMapa(String rol) {
+        return personajeRepository.findByRolClanIgnoreCaseAndUbicacionNotNull(rol);
     }
 }

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio JPA para la entidad Personaje
+ * Repositorio JPA para la entidad Personaje con soporte geoespacial (PostGIS)
  */
 @Repository
 public interface PersonajeRepository extends JpaRepository<Personaje, Long> {
@@ -33,7 +33,15 @@ public interface PersonajeRepository extends JpaRepository<Personaje, Long> {
 
     List<Personaje> findByJugadorIdJugador(Long jugadorId);
 
-    // --- LAB 2: FILTRAR HEALERS CERCANOS AL TANK ---
+
     @Query(value = "SELECT * FROM Personaje p WHERE (p.rol_clan ILIKE '%healer%' OR p.rol_clan ILIKE '%sanador%' OR p.clase ILIKE '%sacerdote%' OR p.clase ILIKE '%druida%' OR p.clase ILIKE '%chaman%' OR p.clase ILIKE '%paladin%') AND p.ubicacion_actual IS NOT NULL AND ST_DWithin(p.ubicacion_actual, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :distancia)", nativeQuery = true)
     List<Personaje> findHealersCercanos(@Param("lon") double lon, @Param("lat") double lat, @Param("distancia") double distancia);
+
+
+    @Query(value = "SELECT * FROM Personaje p WHERE p.ubicacion_actual IS NOT NULL", nativeQuery = true)
+    List<Personaje> findAllConUbicacion();
+
+
+    @Query(value = "SELECT * FROM Personaje p WHERE p.ubicacion_actual IS NOT NULL AND p.rol_clan ILIKE CONCAT('%', :rol, '%')", nativeQuery = true)
+    List<Personaje> findByRolClanIgnoreCaseAndUbicacionNotNull(@Param("rol") String rol);
 }

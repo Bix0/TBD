@@ -134,8 +134,7 @@ public class RaidController {
             return ResponseEntity.badRequest().body("Error al distribuir botín: " + e.getMessage());
         }
     }
-
-    // --- NUEVO ENDPOINT GEOESPACIAL (LAB 2) ---
+    
     @GetMapping("/cercanas")
     public ResponseEntity<List<Raid>> getRaidsCercanas(
             @RequestParam(required = false) Long idPersonaje,

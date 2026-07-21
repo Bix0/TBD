@@ -196,7 +196,7 @@ public class ClanController {
         return ResponseEntity.ok(clanService.obtenerAuditoriaLiderazgo());
     }
 
-    // --- NUEVO ENDPOINT GEOESPACIAL (LAB 2) ---
+
     @GetMapping("/cercanos")
     public ResponseEntity<List<Clan>> getClanesCercanos(
             @RequestParam double lon,
@@ -211,7 +211,7 @@ public class ClanController {
         return ResponseEntity.ok(clanesCercanos);
     }
 
-    // --- ENDPOINT MAPA DE CALOR (LAB 2) ---
+
     @GetMapping("/mapa-calor")
     public ResponseEntity<List<Object[]>> getMapaCalor() {
         try {

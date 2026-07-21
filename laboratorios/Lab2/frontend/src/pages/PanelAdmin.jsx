@@ -150,7 +150,6 @@ function PanelAdmin() {
 
   const handleItemSubmit = (e) => {
     e.preventDefault();
-    // CORRECCIÓN: Enviamos tanto camelCase como snake_case para asegurar compatibilidad
     const payload = {
       nombre: nuevoItem.nombre,
       itemLvl: parseInt(nuevoItem.item_lvl) || 0,
@@ -170,7 +169,6 @@ function PanelAdmin() {
 
   const handleRaidSubmit = (e) => {
     e.preventDefault();
-    // CORRECCIÓN: Compatibilidad camelCase y Coordenadas por defecto (Centro de Santiago)
     const payload = {
       nombre: raidData.nombre,
       fecha: raidData.fecha,

@@ -1,9 +1,3 @@
-# ============================================
-# Dockerfile para backend MMORPG (Lab2)
-# ============================================
-# Build:   docker build -t lab2-backend .
-# Run:     docker run -p 8080:8080 lab2-backend
-# ============================================
 
 # Etapa 1: Build con Maven + JDK 21
 FROM maven:3.9-eclipse-temurin-21 AS build

@@ -40,7 +40,7 @@ public class Clan {
     @Column(nullable = false)    
     private String faccion;   
 
-    // --- NUEVO REQUERIMIENTO POSTGIS (LAB 2) ---
+
     @JsonIgnore
     @Column(columnDefinition = "geometry(Point, 4326)")
     private Point ubicacion;

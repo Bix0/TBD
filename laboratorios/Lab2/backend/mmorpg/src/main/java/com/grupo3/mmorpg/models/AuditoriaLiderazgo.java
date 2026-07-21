@@ -44,7 +44,7 @@ public class AuditoriaLiderazgo {
     @Column(nullable = false)
     private LocalDateTime fechaCambio;
 
-    // 2. AGREGA ESTE ATRIBUTO PARA EL LABORATORIO 2
+
     @Column(name = "ubicacion_suceso", columnDefinition = "geometry(Point, 4326)")
     private Point ubicacionSuceso;
 }
