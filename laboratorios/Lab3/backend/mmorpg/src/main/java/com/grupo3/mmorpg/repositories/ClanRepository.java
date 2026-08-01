@@ -1,64 +1,64 @@
 package com.grupo3.mmorpg.repositories;
 
 import com.grupo3.mmorpg.models.Clan;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio JPA para la entidad Clan
+ * Repositorio de MongoDB para la entidad Clan
  */
 @Repository
-public interface ClanRepository extends JpaRepository<Clan, Long> {
+public interface ClanRepository extends MongoRepository<Clan, String> {
 
     Optional<Clan> findByNombre(String nombre);
 
     boolean existsByNombre(String nombre);
 
-    @Modifying
-    @Query("UPDATE Clan c SET c.idLider = :nuevoLider WHERE c.idClan = :idClan")
-    int updateLider(@Param("idClan") Long idClan, @Param("nuevoLider") Long nuevoLider);
+    // Búsqueda del ID del líder de un clan
+    @Query(value = "{ '_id': ?0 }", fields = "{ 'idLider': 1 }")
+    Optional<String> findIdLiderByIdClan(String idClan);
 
-    @Query("SELECT c.idLider FROM Clan c WHERE c.idClan = :idClan")
-    Optional<Long> findIdLiderByIdClan(@Param("idClan") Long idClan);
+    // ==========================================
+    // CONSULTAS GEOESPACIALES Y DE MAPA (MONGODB)
+    // ==========================================
 
-    // Auditoría de liderazgo: join nativo para obtener nombres + coordenadas
-    @Query(value = """
-        SELECT a.id_auditoria, c.nombre AS clan,
-               COALESCE(p1.nombre, 'Nadie') AS antiguo,
-               p2.nombre AS nuevo, a.fecha_cambio,
-               ST_Y(a.ubicacion_suceso::geometry) as lat,
-               ST_X(a.ubicacion_suceso::geometry) as lon
-        FROM auditoria_liderazgo a
-        JOIN clan c ON a.id_clan = c.id_clan
-        LEFT JOIN personaje p1 ON a.id_antiguo_lider = p1.id_personaje
-        JOIN personaje p2 ON a.id_nuevo_lider = p2.id_personaje
-        ORDER BY a.fecha_cambio DESC
-        """, nativeQuery = true)
-    List<Object[]> obtenerAuditoriaLiderazgo();
+    /**
+     * Clanes cercanos aplicando operador $near sobre el campo geoespacial 2dsphere y filtro opcional por facción.
+     */
+    @Query("{ " +
+            "  'ubicacion': { " +
+            "    $near: { " +
+            "      $geometry: { type: 'Point', coordinates: [ ?0, ?1 ] }, " +
+            "      $maxDistance: ?2 " +
+            "    } " +
+            "  }, " +
+            "  $and: [ " +
+            "    { $expr: { $or: [ { $eq: [ ?3, null ] }, { $regexMatch: { input: '$faccion', regex: ?3, options: 'i' } } ] } } " +
+            "  ] " +
+            "}")
+    List<Clan> findClanesCercanos(double longitud, double latitud, double distanciaMetros, String faccion);
 
-    // --- NUEVA LÓGICA GEOESPACIAL (LAB 2) ---
-    @Query(value = "SELECT * FROM Clan c WHERE c.ubicacion IS NOT NULL AND ST_DWithin(c.ubicacion, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :distancia) AND (:faccion IS NULL OR LOWER(c.faccion) = LOWER(:faccion))", nativeQuery = true)
-    List<Clan> findClanesCercanos(@Param("lon") double lon, @Param("lat") double lat, @Param("distancia") double distancia, @Param("faccion") String faccion);
+    /**
+     * Búsqueda general de clanes cercanos para proyecciones personalizadas
+     */
+    @Query("{ " +
+            "  'ubicacion': { " +
+            "    $near: { " +
+            "      $geometry: { type: 'Point', coordinates: [ ?0, ?1 ] }, " +
+            "      $maxDistance: ?2 " +
+            "    } " +
+            "  }, " +
+            "  'ubicacion': { $ne: null } " +
+            "}")
+    List<Clan> findClanesCercanosCustom(double longitud, double latitud, double distanciaMetros);
 
-    // Extrae coordenadas planas (ST_Y, ST_X) para consumo directo en mapas/proyecciones
-    @Query(value = """
-        SELECT id_clan, nombre, id_lider,
-               ST_Y(ubicacion::geometry) as latitud,
-               ST_X(ubicacion::geometry) as longitud
-        FROM clan c 
-        WHERE c.ubicacion IS NOT NULL 
-          AND ST_DWithin(c.ubicacion, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :distancia)
-        """, nativeQuery = true)
-    List<Object[]> findClanesCercanosCustom(@Param("lon") double lon, @Param("lat") double lat, @Param("distancia") double distancia);
-
-    // --- MAPA DE CALOR (LAB 2) ---
-    // Extrae las coordenadas separadas (lat, lon) y el dkp total desde la vista materializada
-    @Query(value = "SELECT id_clan, nombre, ST_Y(ubicacion::geometry) as lat, ST_X(ubicacion::geometry) as lon, dkp_total_clan FROM mv_calor_clanes WHERE ubicacion IS NOT NULL", nativeQuery = true)
-    List<Object[]> obtenerMapaCalorClanes();
+    /**
+     * Mapa de calor de clanes (en MongoDB se puede consultar directo de la colección de clanes o colección calculada)
+     */
+    @Query(value = "{ 'ubicacion': { $ne: null } }")
+    List<Clan> obtenerMapaCalorClanes();
 }

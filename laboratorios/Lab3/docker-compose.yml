@@ -1,41 +1,56 @@
+version: '3.8'
+
 services:
-  db:
-    image: postgis/postgis:16-3.4
-    container_name: lab2-postgis
-    environment:
-      POSTGRES_DB: db_laboratorio
-      POSTGRES_USER: admin_raid
-      POSTGRES_PASSWORD: superpassword123
+  # Nodo Primario de MongoDB
+  mongo-primary:
+    image: mongo:6.0
+    container_name: mongo-primary
     ports:
-      - "5435:5432"
+      - "27017:27017"
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin_raid -d db_laboratorio"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - mongo_primary_data:/data/db
+    networks:
+      - mmorpg-network
 
-  backend:
-    build: ./backend/mmorpg
-    container_name: lab2-backend
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/db_laboratorio
-      SPRING_DATASOURCE_USERNAME: admin_raid
-      SPRING_DATASOURCE_PASSWORD: superpassword123
+  # Nodo Secundario de MongoDB
+  mongo-secondary:
+    image: mongo:6.0
+    container_name: mongo-secondary
     ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
+      - "27018:27017"
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo_secondary_data:/data/db
+    networks:
+      - mmorpg-network
 
-  frontend:
-    build: ./frontend
-    container_name: lab2-frontend
-    ports:
-      - "80:80"
+  # Contenedor temporal para inicializar el clúster
+  mongo-setup:
+    image: mongo:6.0
     depends_on:
-      - backend
+      - mongo-primary
+      - mongo-secondary
+    networks:
+      - mmorpg-network
+    restart: "no"
+    entrypoint: [
+      "mongosh",
+      "--host", "mongo-primary:27017",
+      "--eval",
+      "rs.initiate({
+        _id: 'rs0',
+        members: [
+          { _id: 0, host: 'mongo-primary:27017' },
+          { _id: 1, host: 'mongo-secondary:27017' }
+        ]
+      })"
+    ]
 
 volumes:
-  pgdata:
+  mongo_primary_data:
+  mongo_secondary_data:
+
+networks:
+  mmorpg-network:
+    driver: bridge

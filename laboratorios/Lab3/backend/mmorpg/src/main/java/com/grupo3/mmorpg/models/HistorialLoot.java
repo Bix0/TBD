@@ -1,45 +1,35 @@
 package com.grupo3.mmorpg.models;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
 /**
- * Entidad que representa el historial de distribución de loot
- * Mapea a la tabla: Historial_Loot
+ * Documento que representa el historial de distribución de loot en MongoDB.
+ * Colección: historial_loot
  */
-@Entity
-@Table(name = "Historial_Loot")
+@Document(collection = "historial_loot")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class HistorialLoot {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idHistorial;
+    private String idHistorial; // Cambiado a String para el ObjectId de MongoDB
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_raid", nullable = false)
-    @ToString.Exclude
-    private Raid raid;
+    // En MongoDB guardamos las referencias (IDs) en lugar de hacer JOINs completos
+    private String raidId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_personaje", nullable = false)
-    @ToString.Exclude
-    private Personaje personaje;
+    private String personajeId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_item", nullable = false)
-    @ToString.Exclude
-    private Item item;
+    private String itemId;
 
-    @Column(nullable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    private LocalDateTime fecha;
+    // Asignamos la fecha actual por defecto en la creación del objeto
+    private LocalDateTime fecha = LocalDateTime.now();
 
     private String estadoLoot;
 }

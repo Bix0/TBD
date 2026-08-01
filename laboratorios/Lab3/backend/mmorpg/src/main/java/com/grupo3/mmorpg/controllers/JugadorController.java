@@ -7,7 +7,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
+/**
+ * Controller REST para operaciones con Jugadores en MongoDB
+ * Endpoints: /api/jugadores
+ */
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/jugadores")
 public class JugadorController {
@@ -34,14 +40,14 @@ public class JugadorController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Jugador> obtenerJugador(@PathVariable Long id) {
+    public ResponseEntity<Jugador> obtenerJugador(@PathVariable String id) {
         return jugadorService.obtenerJugador(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Jugador> actualizarJugador(@PathVariable Long id, @RequestBody Jugador jugador) {
+    public ResponseEntity<Jugador> actualizarJugador(@PathVariable String id, @RequestBody Jugador jugador) {
         jugador.setIdJugador(id);
         try {
             jugadorService.actualizarJugador(jugador);
@@ -52,7 +58,7 @@ public class JugadorController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarJugador(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminarJugador(@PathVariable String id) {
         try {
             jugadorService.eliminarJugador(id);
             return ResponseEntity.noContent().build();
@@ -73,9 +79,9 @@ public class JugadorController {
         return ResponseEntity.ok(jugadorService.existeUsername(username));
     }
 
-    //Llamada final desde React a través del Servicio
+    // Llamada desde React adaptada para MongoDB
     @GetMapping("/{id}/historial-loot")
-    public ResponseEntity<List<Object[]>> obtenerHistorialLoot(@PathVariable Long id) {
+    public ResponseEntity<List<Object[]>> obtenerHistorialLoot(@PathVariable String id) {
         return ResponseEntity.ok(jugadorService.obtenerHistorialBotinJugador(id));
     }
 }

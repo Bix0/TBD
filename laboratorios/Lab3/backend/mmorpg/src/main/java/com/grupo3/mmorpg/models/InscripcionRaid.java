@@ -1,39 +1,30 @@
 package com.grupo3.mmorpg.models;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
- * Entidad que representa la inscripción de un personaje a una Raid
- * Mapea a la tabla: Inscripcion_Raid
+ * Documento que representa la inscripción de un personaje a una Raid en MongoDB.
+ * Colección: inscripciones_raid
  */
-@Entity
-@Table(name = "Inscripcion_Raid")
+@Document(collection = "inscripciones_raid")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class InscripcionRaid {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idInscripcion;
+    private String idInscripcion; // Cambiado a String para el ObjectId de MongoDB
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_raid", nullable = false)
-    @ToString.Exclude
-    private Raid raid;
+    // En MongoDB guardamos las referencias como IDs (Strings) en lugar de hacer JOINs completos
+    private String raidId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_personaje", nullable = false)
-    @ToString.Exclude
-    private Personaje personaje;
+    private String personajeId;
 
-    @Column(nullable = false)
     private String estado;
 
-    @Column(nullable = false)
     private Boolean asistio = false;
 }

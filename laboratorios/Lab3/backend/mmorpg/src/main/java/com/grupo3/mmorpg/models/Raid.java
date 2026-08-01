@@ -2,80 +2,69 @@ package com.grupo3.mmorpg.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
+import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-// IMPORT VITAL PARA POSTGIS
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.PrecisionModel;
-
 /**
- * Entidad que representa una Raid (evento de grupo)
- * Mapea a la tabla: Raid
+ * Documento que representa una Raid (evento de grupo) en MongoDB.
+ * Colección: raids
  */
-@Entity
-@Table(name = "Raid")
+@Document(collection = "raids")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Raid {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idRaid;
+    private String idRaid; // Cambiado a String para el ObjectId de Mongo
 
-    @Column(nullable = false)
     private String nombre;
 
-    @Column(nullable = false)
     private LocalDateTime fecha;
 
-    @Column(nullable = false)
     private String estado;
 
-    @Column(nullable = false)
     private Integer itemLevelRequerido;
 
-    @Column(nullable = false)
     private Integer cuposTanque;
 
-    @Column(nullable = false)
     private Integer cuposHealer;
 
-    @Column(nullable = false)
     private Integer cuposDps;
 
-    // --- NUEVO REQUERIMIENTO POSTGIS (LAB 2) ---
+    // --- MANEJO GEOESPACIAL EN MONGODB (GeoJSON) ---
     @JsonIgnore
-    @Column(name = "ubicacion_boss", columnDefinition = "geometry(Point, 4326)")
-    private Point ubicacionBoss;
-
-    private static final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE) // Crea el índice espacial automáticamente
+    private GeoJsonPoint ubicacionBoss;
 
     // Setters virtuales para recibir latitud/longitud desde el frontend
     @JsonProperty("latitud")
-    public void setLatitud(Double y) {
-        if (y != null) {
-            double x = (this.ubicacionBoss != null) ? this.ubicacionBoss.getX() : 0;
-            this.ubicacionBoss = geometryFactory.createPoint(new Coordinate(x, y));
+    public void setLatitud(Double latitud) {
+        if (latitud != null) {
+            // GeoJsonPoint recibe (longitud, latitud) -> (X, Y)
+            double longitudActual = (this.ubicacionBoss != null) ? this.ubicacionBoss.getX() : 0.0;
+            this.ubicacionBoss = new GeoJsonPoint(longitudActual, latitud);
         }
     }
 
     @JsonProperty("longitud")
-    public void setLongitud(Double x) {
-        if (x != null) {
-            double y = (this.ubicacionBoss != null) ? this.ubicacionBoss.getY() : 0;
-            this.ubicacionBoss = geometryFactory.createPoint(new Coordinate(x, y));
+    public void setLongitud(Double longitud) {
+        if (longitud != null) {
+            // GeoJsonPoint recibe (longitud, latitud) -> (X, Y)
+            double latitudActual = (this.ubicacionBoss != null) ? this.ubicacionBoss.getY() : 0.0;
+            this.ubicacionBoss = new GeoJsonPoint(longitud, latitudActual);
         }
     }
 
-    // Getters virtuales para devolver latitud/longitud en JSON
+    // Getters virtuales para devolver latitud/longitud en JSON al frontend
     @JsonProperty("latitud")
     public Double getLatitud() {
         return ubicacionBoss != null ? ubicacionBoss.getY() : null;

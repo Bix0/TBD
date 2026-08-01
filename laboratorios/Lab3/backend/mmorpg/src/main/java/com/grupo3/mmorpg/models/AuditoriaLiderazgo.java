@@ -1,50 +1,68 @@
 package com.grupo3.mmorpg.models;
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
+import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
-// 1. AGREGA ESTE IMPORT VITAL PARA POSTGIS:
-import org.locationtech.jts.geom.Point;
-
 /**
- * Entidad que representa la auditoría de cambios de liderazgo en clanes
- * Mapea a la tabla: Auditoria_Liderazgo
+ * Documento que representa la auditoría de cambios de liderazgo en clanes en MongoDB.
+ * Colección: auditoria_liderazgo
  */
-@Entity
-@Table(name = "Auditoria_Liderazgo")
+@Document(collection = "auditoria_liderazgo")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuditoriaLiderazgo {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idAuditoria;
+    private String idAuditoria; // Cambiado a String para el ObjectId de MongoDB
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_clan", nullable = false)
-    @ToString.Exclude
-    private Clan clan;
+    // En MongoDB guardamos las referencias como IDs en lugar de objetos completos
+    private String clanId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_antiguo_lider")
-    @ToString.Exclude
-    private Personaje antiguoLider;
+    private String antiguoLiderId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_nuevo_lider", nullable = false)
-    @ToString.Exclude
-    private Personaje nuevoLider;
+    private String nuevoLiderId;
 
-    @Column(nullable = false)
-    private LocalDateTime fechaCambio;
+    private LocalDateTime fechaCambio = LocalDateTime.now();
 
+    // --- MANEJO GEOESPACIAL EN MONGODB (GeoJSON) ---
+    @JsonIgnore
+    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE) // Soporte espacial para el suceso
+    private GeoJsonPoint ubicacionSuceso;
 
-    @Column(name = "ubicacion_suceso", columnDefinition = "geometry(Point, 4326)")
-    private Point ubicacionSuceso;
+    @JsonProperty("latitud")
+    public void setLatitud(Double latitud) {
+        if (latitud != null) {
+            double longitudActual = (this.ubicacionSuceso != null) ? this.ubicacionSuceso.getX() : 0.0;
+            this.ubicacionSuceso = new GeoJsonPoint(longitudActual, latitud);
+        }
+    }
+
+    @JsonProperty("longitud")
+    public void setLongitud(Double longitud) {
+        if (longitud != null) {
+            double latitudActual = (this.ubicacionSuceso != null) ? this.ubicacionSuceso.getY() : 0.0;
+            this.ubicacionSuceso = new GeoJsonPoint(longitud, latitudActual);
+        }
+    }
+
+    @JsonProperty("latitud")
+    public Double getLatitud() {
+        return ubicacionSuceso != null ? ubicacionSuceso.getY() : null;
+    }
+
+    @JsonProperty("longitud")
+    public Double getLongitud() {
+        return ubicacionSuceso != null ? ubicacionSuceso.getX() : null;
+    }
 }

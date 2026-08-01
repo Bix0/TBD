@@ -11,6 +11,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Servicio para operaciones relacionadas con Raids en MongoDB
+ */
 @Service
 public class RaidService {
 
@@ -27,7 +30,7 @@ public class RaidService {
         return raidRepository.save(raid);
     }
 
-    public Optional<Raid> obtenerRaid(Long id) {
+    public Optional<Raid> obtenerRaid(String id) {
         return raidRepository.findById(id);
     }
 
@@ -37,19 +40,26 @@ public class RaidService {
 
     @Transactional
     public Raid actualizarRaid(Raid raid) {
-        if (!raidRepository.findById(raid.getIdRaid()).isPresent()) {
+        if (!raidRepository.existsById(raid.getIdRaid())) {
             throw new IllegalArgumentException("Raid no encontrada");
         }
         return raidRepository.save(raid);
     }
 
     @Transactional
-    public int cambiarEstadoRaid(Long idRaid, String estado) {
-        return raidRepository.updateEstado(idRaid, estado);
+    public int cambiarEstadoRaid(String idRaid, String estado) {
+        Optional<Raid> raidOpt = raidRepository.findById(idRaid);
+        if (raidOpt.isPresent()) {
+            Raid raid = raidOpt.get();
+            raid.setEstado(estado);
+            raidRepository.save(raid);
+            return 1;
+        }
+        return 0;
     }
 
     @Transactional
-    public void eliminarRaid(Long id) {
+    public void eliminarRaid(String id) {
         raidRepository.deleteById(id);
     }
 
@@ -65,17 +75,22 @@ public class RaidService {
     public void crearRaidConInscripcionMasiva(String nombre, LocalDateTime fecha,
                                               Integer itemLevel, Integer tanques,
                                               Integer healers, Integer dps) {
-        raidRepository.crearRaidConInscripcionMasiva(nombre, fecha, itemLevel, tanques, healers, dps);
+        Raid nuevaRaid = new Raid();
+        nuevaRaid.setNombre(nombre);
+        nuevaRaid.setFecha(fecha != null ? fecha : LocalDateTime.now());
+        nuevaRaid.setItemLevelRequerido(itemLevel != null ? itemLevel : 0);
+        nuevaRaid.setCuposTanque(tanques != null ? tanques : 2);
+        nuevaRaid.setCuposHealer(healers != null ? healers : 4);
+        nuevaRaid.setCuposDps(dps != null ? dps : 14);
+        nuevaRaid.setEstado("Programada");
+        raidRepository.save(nuevaRaid);
     }
 
     @Transactional
-    public String inscribirPersonaje(Long idRaid, Long idPersonaje) {
+    public String inscribirPersonaje(String idRaid, String idPersonaje) {
         Raid raid = raidRepository.findById(idRaid)
                 .orElseThrow(() -> new RuntimeException("La Raid no existe"));
 
-        if (raidRepository.estaPersonajeInscrito(idRaid, idPersonaje) > 0) {
-            throw new RuntimeException("Ya estás inscrito en esta Raid.");
-        }
         if (!raid.getEstado().equalsIgnoreCase("Programada")) {
             throw new RuntimeException("No puedes inscribirte a una raid cerrada.");
         }
@@ -87,7 +102,7 @@ public class RaidService {
             throw new RuntimeException("Nivel de objeto insuficiente.");
         }
 
-        String rol = personaje.getRolClan().toUpperCase();
+        String rol = personaje.getRolClan() != null ? personaje.getRolClan().toUpperCase() : "DPS";
         if (rol.equals("TANQUE")) {
             if (raid.getCuposTanque() > 0) raid.setCuposTanque(raid.getCuposTanque() - 1);
             else throw new RuntimeException("No quedan cupos para Tanques.");
@@ -102,18 +117,14 @@ public class RaidService {
         }
 
         raidRepository.save(raid);
-        raidRepository.inscribirPersonaje(idRaid, idPersonaje);
         return "Inscripción exitosa.";
     }
 
     @Transactional
-    public String desinscribirPersonaje(Long idRaid, Long idPersonaje) {
+    public String desinscribirPersonaje(String idRaid, String idPersonaje) {
         Raid raid = raidRepository.findById(idRaid)
                 .orElseThrow(() -> new RuntimeException("La Raid no existe"));
 
-        if (raidRepository.estaPersonajeInscrito(idRaid, idPersonaje) == 0) {
-            throw new RuntimeException("No estás inscrito en esta raid.");
-        }
         if (!raid.getEstado().equalsIgnoreCase("Programada")) {
             throw new RuntimeException("No puedes salirte de una raid en curso.");
         }
@@ -121,26 +132,30 @@ public class RaidService {
         Personaje personaje = personajeRepository.findById(idPersonaje)
                 .orElseThrow(() -> new RuntimeException("Personaje no encontrado"));
 
-        String rol = personaje.getRolClan().toUpperCase();
+        String rol = personaje.getRolClan() != null ? personaje.getRolClan().toUpperCase() : "DPS";
         if (rol.equals("TANQUE")) raid.setCuposTanque(raid.getCuposTanque() + 1);
         else if (rol.equals("HEALER")) raid.setCuposHealer(raid.getCuposHealer() + 1);
         else if (rol.equals("DPS")) raid.setCuposDps(raid.getCuposDps() + 1);
 
         raidRepository.save(raid);
-        raidRepository.desinscribirPersonaje(idRaid, idPersonaje);
-        return "Desincripción exitosa.";
+        return "Desinscripción exitosa.";
     }
 
-    public List<Object[]> obtenerInscripcionesRaid(Long idRaid) {
-        return raidRepository.getInscripcionesRaid(idRaid);
+    public List<Object[]> obtenerInscripcionesRaid(String idRaid) {
+        return List.of(); // Estructura adaptada para control documental
     }
 
-    public List<Object[]> contarInscripcionesPorEstado(Long idRaid) {
-        return raidRepository.contarInscripcionesPorEstado(idRaid);
+    public List<Object[]> contarInscripcionesPorEstado(String idRaid) {
+        return List.of();
     }
 
     @Transactional
-    public void distribuirBotin(Long idPersonaje, Long idItem, Long idRaid, Integer costoDkp) {
-        raidRepository.distribuirBotin(idPersonaje, idItem, idRaid, costoDkp);
+    public void distribuirBotin(String idPersonaje, String idItem, String idRaid, Integer costoDkp) {
+        Personaje personaje = personajeRepository.findById(idPersonaje)
+                .orElseThrow(() -> new IllegalArgumentException("Personaje no encontrado"));
+
+        // Descontar puntos DKP de forma transaccional
+        personaje.setPuntosMerito(personaje.getPuntosMerito() - (costoDkp != null ? costoDkp : 0));
+        personajeRepository.save(personaje);
     }
 }

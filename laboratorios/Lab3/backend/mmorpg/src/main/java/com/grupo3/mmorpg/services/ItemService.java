@@ -1,37 +1,35 @@
 package com.grupo3.mmorpg.services;
 
 import com.grupo3.mmorpg.models.Item;
-import com.grupo3.mmorpg.models.ItemClasePermitida;
-import com.grupo3.mmorpg.models.ItemClasePermitida.ItemClasePermitidaId;
-import com.grupo3.mmorpg.repositories.ItemClasePermitidaRepository;
 import com.grupo3.mmorpg.repositories.ItemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Servicio para operaciones de negocio relacionadas con Items
+ * Servicio para operaciones de negocio relacionadas con Items en MongoDB
  */
 @Service
 public class ItemService {
 
     private final ItemRepository itemRepository;
-    private final ItemClasePermitidaRepository itemClasePermitidaRepository;
 
-    public ItemService(ItemRepository itemRepository,
-                       ItemClasePermitidaRepository itemClasePermitidaRepository) {
+    public ItemService(ItemRepository itemRepository) {
         this.itemRepository = itemRepository;
-        this.itemClasePermitidaRepository = itemClasePermitidaRepository;
     }
 
     @Transactional
     public Item crearItem(Item item) {
+        if (item.getClasesPermitidas() == null) {
+            item.setClasesPermitidas(new ArrayList<>());
+        }
         return itemRepository.save(item);
     }
 
-    public Optional<Item> obtenerItem(Long id) {
+    public Optional<Item> obtenerItem(String id) {
         return itemRepository.findById(id);
     }
 
@@ -41,14 +39,14 @@ public class ItemService {
 
     @Transactional
     public Item actualizarItem(Item item) {
-        if (!itemRepository.findById(item.getIdItem()).isPresent()) {
+        if (!itemRepository.existsById(item.getIdItem())) {
             throw new IllegalArgumentException("Item no encontrado");
         }
         return itemRepository.save(item);
     }
 
     @Transactional
-    public void eliminarItem(Long id) {
+    public void eliminarItem(String id) {
         itemRepository.deleteById(id);
     }
 
@@ -60,31 +58,44 @@ public class ItemService {
         return itemRepository.findByItemLevelMin(itemLevel);
     }
 
-    // === ITEM_CLASE_PERMITIDA ===
+    // === GESTIÓN DE CLASES PERMITIDAS (EMBEBIDAS) ===
 
     @Transactional
-    public ItemClasePermitida agregarClasePermitida(Long idItem, String clase) {
-        ItemClasePermitidaId id = new ItemClasePermitidaId(idItem, clase);
+    public Item agregarClasePermitida(String idItem, String clase) {
         Item item = itemRepository.findById(idItem)
                 .orElseThrow(() -> new IllegalArgumentException("Item no encontrado"));
-        ItemClasePermitida icp = new ItemClasePermitida(id, item);
-        return itemClasePermitidaRepository.save(icp);
+
+        if (item.getClasesPermitidas() == null) {
+            item.setClasesPermitidas(new ArrayList<>());
+        }
+
+        if (!item.getClasesPermitidas().contains(clase)) {
+            item.getClasesPermitidas().add(clase);
+            itemRepository.save(item);
+        }
+        return item;
     }
 
     @Transactional
-    public void eliminarClasePermitida(Long idItem, String clase) {
-        itemClasePermitidaRepository.deleteByItemIdItemAndIdClasePermitida(idItem, clase);
+    public Item eliminarClasePermitida(String idItem, String clase) {
+        Item item = itemRepository.findById(idItem)
+                .orElseThrow(() -> new IllegalArgumentException("Item no encontrado"));
+
+        if (item.getClasesPermitidas() != null) {
+            item.getClasesPermitidas().remove(clase);
+            itemRepository.save(item);
+        }
+        return item;
     }
 
-    public List<String> obtenerClasesPermitidas(Long idItem) {
-        return itemClasePermitidaRepository.findClasesPermitidasByItemId(idItem);
+    public List<String> obtenerClasesPermitidas(String idItem) {
+        Item item = itemRepository.findById(idItem)
+                .orElseThrow(() -> new IllegalArgumentException("Item no encontrado"));
+        return item.getClasesPermitidas() != null ? item.getClasesPermitidas() : new ArrayList<>();
     }
 
-    public boolean esClasePermitida(Long idItem, String clase) {
-        return itemClasePermitidaRepository.existsByItemIdAndClasePermitida(idItem, clase);
-    }
-
-    public List<ItemClasePermitida> obtenerClasesPermitidasCompleto(Long idItem) {
-        return itemClasePermitidaRepository.findByItemIdItem(idItem);
+    public boolean esClasePermitida(String idItem, String clase) {
+        Item item = itemRepository.findById(idItem).orElse(null);
+        return item != null && item.getClasesPermitidas() != null && item.getClasesPermitidas().contains(clase);
     }
 }

@@ -11,10 +11,11 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Controlador de autenticación.
+ * Controlador de autenticación para MongoDB.
  * Endpoint público: POST /api/auth/login
  * Recibe username + password, devuelve JWT si son válidos.
  */
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -31,9 +32,8 @@ public class AuthController {
 
     /**
      * POST /api/auth/login
-     * Body: { "username": "bruno", "password": "123456" }
-     * Response: { "token": "eyJhbGci...", "username": "bruno", "rol": "Admin",
-     * "id": 1 }
+     * Body: { "username": "admin", "password": "123456" }
+     * Response: { "token": "eyJhbGci...", "username": "admin", "rol": "Admin", "id": "..." }
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
@@ -57,7 +57,7 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("error", "Credenciales inválidas"));
         }
 
-        // Generar token JWT
+        // Generar token JWT pasando el ID (String)
         String token = jwtUtil.generateToken(jugador.getIdJugador(), jugador.getUsername(), jugador.getRol());
 
         return ResponseEntity.ok(Map.of(

@@ -50,12 +50,12 @@ public class RaidController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Raid> obtenerRaid(@PathVariable Long id) {
+    public ResponseEntity<Raid> obtenerRaid(@PathVariable String id) {
         return raidService.obtenerRaid(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Raid> actualizarRaid(@PathVariable Long id, @RequestBody Raid raid) {
+    public ResponseEntity<Raid> actualizarRaid(@PathVariable String id, @RequestBody Raid raid) {
         raid.setIdRaid(id);
         try {
             raidService.actualizarRaid(raid);
@@ -66,7 +66,7 @@ public class RaidController {
     }
 
     @PutMapping("/{id}/estado")
-    public ResponseEntity<Void> cambiarEstadoRaid(@PathVariable Long id, @RequestParam String estado) {
+    public ResponseEntity<Void> cambiarEstadoRaid(@PathVariable String id, @RequestParam String estado) {
         try {
             raidService.cambiarEstadoRaid(id, estado);
             return ResponseEntity.ok().build();
@@ -76,7 +76,7 @@ public class RaidController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarRaid(@PathVariable Long id) {
+    public ResponseEntity<Void> eliminarRaid(@PathVariable String id) {
         try {
             raidService.eliminarRaid(id);
             return ResponseEntity.noContent().build();
@@ -96,7 +96,7 @@ public class RaidController {
     }
 
     @PostMapping("/{id}/inscribir")
-    public ResponseEntity<String> inscribirPersonaje(@PathVariable Long id, @RequestParam Long idPersonaje) {
+    public ResponseEntity<String> inscribirPersonaje(@PathVariable String id, @RequestParam String idPersonaje) {
         try {
             String mensaje = raidService.inscribirPersonaje(id, idPersonaje);
             return ResponseEntity.ok(mensaje);
@@ -106,7 +106,7 @@ public class RaidController {
     }
 
     @PostMapping("/{id}/desinscribir")
-    public ResponseEntity<Void> desinscribirPersonaje(@PathVariable Long id, @RequestParam Long idPersonaje) {
+    public ResponseEntity<Void> desinscribirPersonaje(@PathVariable String id, @RequestParam String idPersonaje) {
         try {
             raidService.desinscribirPersonaje(id, idPersonaje);
             return ResponseEntity.ok().build();
@@ -116,17 +116,17 @@ public class RaidController {
     }
 
     @GetMapping("/{id}/inscripciones")
-    public List<Object[]> obtenerInscripcionesRaid(@PathVariable Long id) {
+    public List<Object[]> obtenerInscripcionesRaid(@PathVariable String id) {
         return raidService.obtenerInscripcionesRaid(id);
     }
 
     @GetMapping("/{id}/inscripciones-conteo")
-    public List<Object[]> contarInscripcionesPorEstado(@PathVariable Long id) {
+    public List<Object[]> contarInscripcionesPorEstado(@PathVariable String id) {
         return raidService.contarInscripcionesPorEstado(id);
     }
 
     @PostMapping("/distribuir-loot")
-    public ResponseEntity<String> distribuirLoot(@RequestParam Long idPersonaje, @RequestParam Long idItem, @RequestParam Long idRaid, @RequestParam Integer costoDkp) {
+    public ResponseEntity<String> distribuirLoot(@RequestParam String idPersonaje, @RequestParam String idItem, @RequestParam String idRaid, @RequestParam Integer costoDkp) {
         try {
             raidService.distribuirBotin(idPersonaje, idItem, idRaid, costoDkp);
             return ResponseEntity.ok("Botín distribuido correctamente. DKP descontado.");
@@ -134,10 +134,10 @@ public class RaidController {
             return ResponseEntity.badRequest().body("Error al distribuir botín: " + e.getMessage());
         }
     }
-    
+
     @GetMapping("/cercanas")
     public ResponseEntity<List<Raid>> getRaidsCercanas(
-            @RequestParam(required = false) Long idPersonaje,
+            @RequestParam(required = false) String idPersonaje,
             @RequestParam(defaultValue = "500") double lon,
             @RequestParam(defaultValue = "500") double lat,
             @RequestParam(defaultValue = "5000") double distancia) {

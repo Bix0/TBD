@@ -13,19 +13,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * Utilidad para generar y validar tokens JWT.
+ * Utilidad para generar y validar tokens JWT adaptada a MongoDB (IDs tipo String).
  * Usa firma HMAC-SHA256 con una clave secreta segura.
  */
 @Component
 public class JwtUtil {
 
     // Clave secreta para firma HMAC-SHA256
-    // Se carga desde application.properties para que los tokens sobrevivan reinicios
     private final SecretKey SECRET_KEY;
 
     public JwtUtil(@Value("${jwt.secret}") String secret) {
         this.SECRET_KEY = Keys.hmacShaKeyFor(
-            secret.getBytes(StandardCharsets.UTF_8)
+                secret.getBytes(StandardCharsets.UTF_8)
         );
     }
 
@@ -34,12 +33,12 @@ public class JwtUtil {
     /**
      * Genera un token JWT para un usuario autenticado.
      *
-     * @param idJugador ID del jugador
+     * @param idJugador ID del jugador (String para MongoDB ObjectId)
      * @param username  Nombre de usuario
      * @param rol       Rol del usuario (Admin, Usuario)
      * @return Token JWT como String
      */
-    public String generateToken(Long idJugador, String username, String rol) {
+    public String generateToken(String idJugador, String username, String rol) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("id", idJugador);
         claims.put("rol", rol);
@@ -48,14 +47,14 @@ public class JwtUtil {
 
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
-            .claims(claims)
-            .subject(subject)
-            .issuedAt(new Date(System.currentTimeMillis()))
-            .expiration(
-                new Date(System.currentTimeMillis() + EXPIRATION_TIME)
-            )
-            .signWith(SECRET_KEY)
-            .compact();
+                .claims(claims)
+                .subject(subject)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(
+                        new Date(System.currentTimeMillis() + EXPIRATION_TIME)
+                )
+                .signWith(SECRET_KEY)
+                .compact();
     }
 
     /**
@@ -66,10 +65,10 @@ public class JwtUtil {
     }
 
     /**
-     * Extrae el ID del jugador del token.
+     * Extrae el ID del jugador del token (String).
      */
-    public Long extractId(String token) {
-        return extractAllClaims(token).get("id", Long.class);
+    public String extractId(String token) {
+        return extractAllClaims(token).get("id", String.class);
     }
 
     /**
@@ -96,8 +95,8 @@ public class JwtUtil {
     }
 
     private <T> T extractClaim(
-        String token,
-        Function<Claims, T> claimsResolver
+            String token,
+            Function<Claims, T> claimsResolver
     ) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
@@ -105,9 +104,9 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-            .verifyWith(SECRET_KEY)
-            .build()
-            .parseSignedClaims(token)
-            .getPayload();
+                .verifyWith(SECRET_KEY)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

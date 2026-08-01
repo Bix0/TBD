@@ -1,47 +1,69 @@
 package com.grupo3.mmorpg.repositories;
 
 import com.grupo3.mmorpg.models.Personaje;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio JPA para la entidad Personaje con soporte geoespacial (PostGIS)
+ * Repositorio de MongoDB para la entidad Personaje con soporte geoespacial (2dsphere)
  */
 @Repository
-public interface PersonajeRepository extends JpaRepository<Personaje, Long> {
+public interface PersonajeRepository extends MongoRepository<Personaje, String> {
 
-    List<Personaje> findByClanIdClan(Long clanId);
+    List<Personaje> findByClanId(String clanId);
 
     List<Personaje> findByClase(String clase);
 
     List<Personaje> findByRolClan(String rolClan);
 
-    @Query("SELECT p FROM Personaje p WHERE p.itemLevel >= :minLevel ORDER BY p.itemLevel DESC")
-    List<Personaje> findByItemLevelMin(@Param("minLevel") Integer minLevel);
+    // En Mongo podemos usar la nomenclatura de métodos de Spring o un @Query.
+    // Usamos nomenclatura directa para que ordene automáticamente.
+    List<Personaje> findByItemLevelGreaterThanEqualOrderByItemLevelDesc(Integer minLevel);
 
-    @Modifying
-    @Query("UPDATE Personaje p SET p.puntosMerito = p.puntosMerito - :cantidad WHERE p.idPersonaje = :idPersonaje")
-    int updatePuntosMerito(@Param("idPersonaje") Long idPersonaje, @Param("cantidad") Integer cantidad);
+    Optional<Personaje> findFirstByJugadorId(String jugadorId);
 
-    Optional<Personaje> findFirstByJugadorIdJugador(Long jugadorId);
+    List<Personaje> findByJugadorId(String jugadorId);
 
-    List<Personaje> findByJugadorIdJugador(Long jugadorId);
+    // ==========================================
+    // CONSULTAS GEOESPACIALES Y DE MAPA (MONGODB)
+    // ==========================================
 
+    /**
+     * Equivalente al ST_DWithin de PostGIS.
+     * Usa el operador $near y $maxDistance (en metros para índices 2dsphere).
+     */
+    @Query("{ " +
+            "  'ubicacionActual': { " +
+            "    $near: { " +
+            "      $geometry: { type: 'Point', coordinates: [ ?0, ?1 ] }, " +
+            "      $maxDistance: ?2 " +
+            "    } " +
+            "  }, " +
+            "  $or: [ " +
+            "    { 'rolClan': { $regex: 'healer', $options: 'i' } }, " +
+            "    { 'rolClan': { $regex: 'sanador', $options: 'i' } }, " +
+            "    { 'clase': { $regex: 'sacerdote', $options: 'i' } }, " +
+            "    { 'clase': { $regex: 'druida', $options: 'i' } }, " +
+            "    { 'clase': { $regex: 'chaman', $options: 'i' } }, " +
+            "    { 'clase': { $regex: 'paladin', $options: 'i' } } " +
+            "  ] " +
+            "}")
+    List<Personaje> findHealersCercanos(double longitud, double latitud, double distanciaMetros);
 
-    @Query(value = "SELECT * FROM Personaje p WHERE (p.rol_clan ILIKE '%healer%' OR p.rol_clan ILIKE '%sanador%' OR p.clase ILIKE '%sacerdote%' OR p.clase ILIKE '%druida%' OR p.clase ILIKE '%chaman%' OR p.clase ILIKE '%paladin%') AND p.ubicacion_actual IS NOT NULL AND ST_DWithin(p.ubicacion_actual, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326), :distancia)", nativeQuery = true)
-    List<Personaje> findHealersCercanos(@Param("lon") double lon, @Param("lat") double lat, @Param("distancia") double distancia);
-
-
-    @Query(value = "SELECT * FROM Personaje p WHERE p.ubicacion_actual IS NOT NULL", nativeQuery = true)
+    /**
+     * Personajes activos en el mapa (tienen coordenadas)
+     * Equivalente a "IS NOT NULL" en SQL
+     */
+    @Query("{ 'ubicacionActual': { $ne: null } }")
     List<Personaje> findAllConUbicacion();
 
-
-    @Query(value = "SELECT * FROM Personaje p WHERE p.ubicacion_actual IS NOT NULL AND p.rol_clan ILIKE CONCAT('%', :rol, '%')", nativeQuery = true)
-    List<Personaje> findByRolClanIgnoreCaseAndUbicacionNotNull(@Param("rol") String rol);
+    /**
+     * Personajes activos en el mapa filtrados por rol
+     */
+    @Query("{ 'ubicacionActual': { $ne: null }, 'rolClan': { $regex: ?0, $options: 'i' } }")
+    List<Personaje> findByRolClanIgnoreCaseAndUbicacionNotNull(String rol);
 }

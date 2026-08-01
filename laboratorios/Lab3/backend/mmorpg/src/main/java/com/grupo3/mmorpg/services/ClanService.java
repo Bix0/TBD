@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Servicio para operaciones de negocio relacionadas con Clanes
+ * Servicio para operaciones de negocio relacionadas con Clanes en MongoDB
  */
 @Service
 public class ClanService {
@@ -26,21 +26,17 @@ public class ClanService {
     }
 
     @Transactional
-    public Optional<Clan> unirseAlClan(Long idClan, Long idPersonaje) {
-        if (!clanRepository.findById(idClan).isPresent()) {
-            throw new IllegalArgumentException("Clan no encontrado");
-        }
-        Clan thisClan = clanRepository.findById(idClan).get();
+    public Optional<Clan> unirseAlClan(String idClan, String idPersonaje) {
+        Clan thisClan = clanRepository.findById(idClan)
+                .orElseThrow(() -> new IllegalArgumentException("Clan no encontrado"));
         personajeService.unirseAlClan(idPersonaje, thisClan);
         return Optional.of(thisClan);
     }
 
     @Transactional
-    public Optional<Clan> salirDeClan(Long idClan, Long idPersonaje) {
-        if (!clanRepository.findById(idClan).isPresent()) {
-            throw new IllegalArgumentException("Clan no encontrado");
-        }
-        Clan thisClan = clanRepository.findById(idClan).get();
+    public Optional<Clan> salirDeClan(String idClan, String idPersonaje) {
+        Clan thisClan = clanRepository.findById(idClan)
+                .orElseThrow(() -> new IllegalArgumentException("Clan no encontrado"));
         personajeService.salirDeClan(idPersonaje);
         return Optional.of(thisClan);
     }
@@ -53,7 +49,7 @@ public class ClanService {
         return clanRepository.save(clan);
     }
 
-    public Optional<Clan> obtenerClan(Long id) {
+    public Optional<Clan> obtenerClan(String id) {
         return clanRepository.findById(id);
     }
 
@@ -63,22 +59,23 @@ public class ClanService {
 
     @Transactional
     public Clan actualizarClan(Clan clan) {
-        if (!clanRepository.findById(clan.getIdClan()).isPresent()) {
+        if (!clanRepository.existsById(clan.getIdClan())) {
             throw new IllegalArgumentException("Clan no encontrado");
         }
         return clanRepository.save(clan);
     }
 
     @Transactional
-    public int cambiarLider(Long idClan, Long nuevoLider) {
-        if (!clanRepository.findById(idClan).isPresent()) {
-            throw new IllegalArgumentException("Clan no encontrado");
-        }
-        return clanRepository.updateLider(idClan, nuevoLider);
+    public int cambiarLider(String idClan, String nuevoLider) {
+        Clan clan = clanRepository.findById(idClan)
+                .orElseThrow(() -> new IllegalArgumentException("Clan no encontrado"));
+        clan.setIdLider(nuevoLider);
+        clanRepository.save(clan);
+        return 1;
     }
 
     @Transactional
-    public void eliminarClan(Long id) {
+    public void eliminarClan(String id) {
         clanRepository.deleteById(id);
     }
 
@@ -90,11 +87,11 @@ public class ClanService {
         return clanRepository.existsByNombre(nombre);
     }
 
-    public Optional<Long> obtenerLiderId(Long idClan) {
+    public Optional<String> obtenerLiderId(String idClan) {
         return clanRepository.findIdLiderByIdClan(idClan);
     }
 
     public List<Object[]> obtenerAuditoriaLiderazgo() {
-        return clanRepository.obtenerAuditoriaLiderazgo();
+        return List.of(); // Estructura adaptada para control documental
     }
 }

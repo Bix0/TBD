@@ -1,39 +1,30 @@
 package com.grupo3.mmorpg.models;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
- * Entidad que representa el Inventario de un personaje
- * Mapea a la tabla: Inventario
+ * Documento que representa un registro en el Inventario de un personaje.
+ * Colección: inventarios
  */
-@Entity
-@Table(name = "Inventario")
+@Document(collection = "inventarios")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Inventario {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idInventario;
+    private String idInventario; // Cambiado a String para el ObjectId de MongoDB
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_item", nullable = false)
-    @ToString.Exclude
-    private Item item;
+    // En MongoDB guardamos las referencias (IDs) en lugar de hacer JOINs completos
+    private String itemId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_personaje", nullable = false)
-    @ToString.Exclude
-    private Personaje personaje;
+    private String personajeId;
 
-    @Column(nullable = false)
     private Integer cantidad = 1;
 
-    @Column(nullable = false)
     private Boolean equipado = false;
 }

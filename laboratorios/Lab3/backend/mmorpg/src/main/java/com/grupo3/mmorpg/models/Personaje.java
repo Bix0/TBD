@@ -1,75 +1,63 @@
 package com.grupo3.mmorpg.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
-// IMPORT VITAL PARA POSTGIS
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.PrecisionModel;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
+import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
- * Entidad que representa un Personaje (avatar) del jugador
- * Mapea a la tabla: Personaje
- *
- * Nota: En fases posteriores se agregará la columna espacial
- * ubicacion (Point) y el campo regionMapa (String).
+ * Documento que representa un Personaje (avatar) del jugador en MongoDB.
+ * Colección: personajes
  */
-@Entity
-@Table(name = "Personaje")
+@Document(collection = "personajes")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties({"ubicacionActual"})
+// Creamos índices compuestos tal como lo pide el Laboratorio 3
+@CompoundIndexes({
+        @CompoundIndex(name = "clan_clase_rol_idx", def = "{'clanId': 1, 'clase': 1, 'rolClan': 1}")
+})
 public class Personaje {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idPersonaje;
+    private String idPersonaje;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_jugador", nullable = false)
-    @ToString.Exclude
-    private Jugador jugador;
+    // En MongoDB, en lugar de un JOIN pesado de SQL, usamos @DBRef o simplemente guardamos el ID.
+    // Como la instrucción pide "Referenciado", guardamos el ID del jugador y el ID del clan.
+    private String jugadorId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_clan")
-    @ToString.Exclude
-    private Clan clan;
+    private String clanId;
 
-    @Column(unique = true, nullable = false)
+    // Ya no usamos @Column(unique=true), sino la anotación de indexación de Mongo.
+    // (Nota: el índice único real se debe crear en la configuración, pero esto documenta la intención)
     private String nombre;
 
-    @Column(nullable = false)
     private String clase;
 
-    @Column(nullable = false)
     private Integer nivel;
 
-    @Column(nullable = false)
     private String faccion;
 
-    @Column(nullable = false)
     private Integer itemLevel;
 
-    @Column(nullable = false)
     private Integer puntosMerito = 0;
 
     private String rolClan;
 
-    // --- NUEVO REQUERIMIENTO POSTGIS (LAB 2) ---
+    // --- MANEJO GEOESPACIAL EN MONGODB (GeoJSON) ---
     @JsonIgnore
-    @Column(name = "ubicacion_actual", columnDefinition = "geometry(Point, 4326)")
-    private Point ubicacionActual;
-
-    private static final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE) // Obligatorio para $near
+    private GeoJsonPoint ubicacionActual;
 
     @JsonProperty("latitud")
     public Double getLatitud() {
@@ -77,10 +65,11 @@ public class Personaje {
     }
 
     @JsonProperty("latitud")
-    public void setLatitud(Double y) {
-        if (y != null) {
-            double x = (this.ubicacionActual != null) ? this.ubicacionActual.getX() : 0;
-            this.ubicacionActual = geometryFactory.createPoint(new Coordinate(x, y));
+    public void setLatitud(Double latitud) {
+        if (latitud != null) {
+            double longitudActual = (this.ubicacionActual != null) ? this.ubicacionActual.getX() : 0.0;
+            // OJO: GeoJsonPoint en Spring Data recibe (Longitud, Latitud) = (X, Y)
+            this.ubicacionActual = new GeoJsonPoint(longitudActual, latitud);
         }
     }
 
@@ -90,13 +79,13 @@ public class Personaje {
     }
 
     @JsonProperty("longitud")
-    public void setLongitud(Double x) {
-        if (x != null) {
-            double y = (this.ubicacionActual != null) ? this.ubicacionActual.getY() : 0;
-            this.ubicacionActual = geometryFactory.createPoint(new Coordinate(x, y));
+    public void setLongitud(Double longitud) {
+        if (longitud != null) {
+            double latitudActual = (this.ubicacionActual != null) ? this.ubicacionActual.getY() : 0.0;
+            // OJO: GeoJsonPoint en Spring Data recibe (Longitud, Latitud) = (X, Y)
+            this.ubicacionActual = new GeoJsonPoint(longitud, latitudActual);
         }
     }
 
-    @Column(name = "region_mapa")
     private String regionMapa;
 }

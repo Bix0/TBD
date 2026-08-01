@@ -1,31 +1,33 @@
 package com.grupo3.mmorpg.models;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.util.List;
 
 /**
- * Entidad que representa un Item (objeto/equipo)
- * Mapea a la tabla: Item
+ * Documento que representa un Item (objeto/equipo) en MongoDB
+ * Colección: items
  */
-@Entity
-@Table(name = "Item")
+@Document(collection = "items")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Item {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idItem;
+    private String idItem; // Cambiado a String para el ObjectId de MongoDB
 
-    @Column(nullable = false)
     private String nombre;
 
-    @Column(nullable = false)
     private Integer itemLvl;
 
-    @Column(nullable = false)
     private Integer gananciaDkp = 0;
+
+    // ¡Aquí está la magia de MongoDB en Java! 
+    // Reemplaza por completo la necesidad de tener la clase ItemClasePermitida.java
+    private List<String> clasesPermitidas;
 }

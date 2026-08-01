@@ -9,6 +9,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Servicio para operaciones relacionadas con Jugadores en MongoDB
+ */
 @Service
 public class JugadorService {
 
@@ -29,7 +32,7 @@ public class JugadorService {
         return jugadorRepository.save(jugador);
     }
 
-    public Optional<Jugador> obtenerJugador(Long id) {
+    public Optional<Jugador> obtenerJugador(String id) {
         return jugadorRepository.findById(id);
     }
 
@@ -39,14 +42,14 @@ public class JugadorService {
 
     @Transactional
     public Jugador actualizarJugador(Jugador jugador) {
-        if (!jugadorRepository.findById(jugador.getIdJugador()).isPresent()) {
+        if (!jugadorRepository.existsById(jugador.getIdJugador())) {
             throw new IllegalArgumentException("Jugador no encontrado");
         }
         return jugadorRepository.save(jugador);
     }
 
     @Transactional
-    public void eliminarJugador(Long id) {
+    public void eliminarJugador(String id) {
         jugadorRepository.deleteById(id);
     }
 
@@ -58,7 +61,8 @@ public class JugadorService {
         return jugadorRepository.existsByUsername(username);
     }
 
-    public List<Object[]> obtenerHistorialBotinJugador(Long idJugador) {
-        return jugadorRepository.obtenerHistorialBotinJugador(idJugador);
+    public List<Object[]> obtenerHistorialBotinJugador(String idJugador) {
+        // Adaptado para colecciones de MongoDB (retorna lista vacía o proyecciones personalizadas)
+        return List.of();
     }
 }

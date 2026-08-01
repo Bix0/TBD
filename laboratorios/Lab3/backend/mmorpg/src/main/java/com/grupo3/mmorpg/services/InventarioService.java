@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Servicio para operaciones de negocio relacionadas con Inventario
+ * Servicio para operaciones de negocio relacionadas con Inventario en MongoDB
  */
 @Service
 public class InventarioService {
@@ -25,7 +25,7 @@ public class InventarioService {
         return inventarioRepository.save(inventario);
     }
 
-    public Optional<Inventario> obtenerInventario(Long id) {
+    public Optional<Inventario> obtenerInventario(String id) {
         return inventarioRepository.findById(id);
     }
 
@@ -35,50 +35,59 @@ public class InventarioService {
 
     @Transactional
     public Inventario actualizarInventario(Inventario inventario) {
-        if (!inventarioRepository.findById(inventario.getIdInventario()).isPresent()) {
+        if (!inventarioRepository.existsById(inventario.getIdInventario())) {
             throw new IllegalArgumentException("Registro de inventario no encontrado");
         }
         return inventarioRepository.save(inventario);
     }
 
     @Transactional
-    public void eliminarInventario(Long id) {
+    public void eliminarInventario(String id) {
         inventarioRepository.deleteById(id);
     }
 
-    // METODOS ESPECIFICOS
-    public List<Inventario> obtenerInventarioPorPersonaje(Long personajeId) {
-        return inventarioRepository.findByPersonajeIdPersonaje(personajeId);
+    // MÉTODOS ESPECÍFICOS
+    public List<Inventario> obtenerInventarioPorPersonaje(String personajeId) {
+        return inventarioRepository.findByPersonajeId(personajeId);
     }
 
-    public List<Inventario> obtenerItemsEquipados(Long personajeId) {
-        return inventarioRepository.findByPersonajeIdPersonajeAndEquipadoTrue(personajeId);
+    public List<Inventario> obtenerItemsEquipados(String personajeId) {
+        return inventarioRepository.findByPersonajeIdAndEquipadoTrue(personajeId);
     }
 
-    public Optional<Inventario> obtenerItemEnInventario(Long personajeId, Long itemId) {
-        return inventarioRepository.findByPersonajeIdPersonajeAndItemIdItem(personajeId, itemId);
-    }
-
-    @Transactional
-    public int equiparItem(Long idInventario) {
-        return inventarioRepository.equiparItem(idInventario);
+    public Optional<Inventario> obtenerItemEnInventario(String personajeId, String itemId) {
+        return inventarioRepository.findByPersonajeIdAndItemId(personajeId, itemId);
     }
 
     @Transactional
-    public int desequiparItem(Long idInventario) {
-        return inventarioRepository.desequiparItem(idInventario);
+    public Inventario equiparItem(String idInventario) {
+        Inventario inventario = inventarioRepository.findById(idInventario)
+                .orElseThrow(() -> new IllegalArgumentException("Inventario no encontrado"));
+        inventario.setEquipado(true);
+        return inventarioRepository.save(inventario);
     }
 
     @Transactional
-    public int aumentarCantidadItem(Long idInventario, Integer cantidad) {
-        return inventarioRepository.aumentarCantidad(idInventario, cantidad);
+    public Inventario desequiparItem(String idInventario) {
+        Inventario inventario = inventarioRepository.findById(idInventario)
+                .orElseThrow(() -> new IllegalArgumentException("Inventario no encontrado"));
+        inventario.setEquipado(false);
+        return inventarioRepository.save(inventario);
     }
 
-    public boolean personajeTieneItem(Long personajeId, Long itemId) {
-        return inventarioRepository.tieneItem(personajeId, itemId);
+    @Transactional
+    public Inventario aumentarCantidadItem(String idInventario, Integer cantidad) {
+        Inventario inventario = inventarioRepository.findById(idInventario)
+                .orElseThrow(() -> new IllegalArgumentException("Inventario no encontrado"));
+        inventario.setCantidad(inventario.getCantidad() + (cantidad != null ? cantidad : 1));
+        return inventarioRepository.save(inventario);
     }
 
-    public int contarItemsEnInventario(Long personajeId) {
-        return inventarioRepository.contarItems(personajeId);
+    public boolean personajeTieneItem(String personajeId, String itemId) {
+        return inventarioRepository.existsByPersonajeIdAndItemId(personajeId, itemId);
+    }
+
+    public int contarItemsEnInventario(String personajeId) {
+        return (int) inventarioRepository.countByPersonajeId(personajeId);
     }
 }

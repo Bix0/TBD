@@ -1,33 +1,31 @@
 package com.grupo3.mmorpg.models;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
  * Entidad que representa un Jugador en el sistema MMORPG
- * Mapea a la tabla: Jugador
+ * Mapea a la colección: jugadores
  */
-@Entity
-@Table(name = "Jugador")
+@Document(collection = "jugadores")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Jugador {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idJugador;
+    private String idJugador;
 
-    @Column(unique = true, nullable = false)
+    @Indexed(unique = true)
     private String username;
 
     @ToString.Exclude
-    @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
     private String rol;
 }
