@@ -365,7 +365,11 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
         {/* MODO 1: MAPA DE CALOR */}
         {modo === "calor" &&
           clanesCalor.map((clan, index) => {
-            const [id, nombre, lat, lon, dkpTotal] = clan;
+            const id = Array.isArray(clan) ? clan[0] : (clan.idClan || clan.id_clan);
+            const nombre = Array.isArray(clan) ? clan[1] : clan.nombre;
+            const lat = Array.isArray(clan) ? clan[2] : clan.latitud;
+            const lon = Array.isArray(clan) ? clan[3] : clan.longitud;
+            const dkpTotal = Array.isArray(clan) ? clan[4] : (clan.dkpTotal || clan.dkp_total || 0);
 
             return (
               <CircleMarker
