@@ -6,6 +6,7 @@ import {
   Marker,
   Popup,
   Tooltip,
+  useMap,
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -31,6 +32,19 @@ const oldIcon = new L.Icon({
   iconAnchor: [12, 24],
   popupAnchor: [0, -24],
 });
+
+// Ajusta el zoom para que la imagen llene todo el contenedor al cargar
+// (con un paso extra de zoom para que no se vea tan pequeña)
+function FitMapToBounds({ bounds }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.fitBounds(bounds);
+    map.setZoom(map.getZoom() + 1);
+  }, [map]);
+
+  return null;
+}
 
 const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
   const [modo, setModo] = useState("calor"); // "calor" | "cercanos" | "sedes"
@@ -161,10 +175,11 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
     return base + extra;
   };
 
-  // Límites del plano 1000x1000 [Y, X]
+  // Límites del plano: el backend usa GeoJSON (2dsphere) con coordenadas 0-90,
+  // igual que el mapa de raids. [Y, X] en orden [lat, lng].
   const bounds = [
     [0, 0],
-    [1000, 1000],
+    [90, 90],
   ];
 
   return (
@@ -331,6 +346,7 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
         className="leaflet-container"
       >
         <ImageOverlay url="/mapa_juego.png" bounds={bounds} />
+        <FitMapToBounds bounds={bounds} />
 
         {/* Renderizar Jugador Activo */}
         {activePj && activePj.latitud != null && activePj.longitud != null && (
@@ -365,11 +381,15 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
         {/* MODO 1: MAPA DE CALOR */}
         {modo === "calor" &&
           clanesCalor.map((clan, index) => {
-            const id = Array.isArray(clan) ? clan[0] : (clan.idClan || clan.id_clan);
+            const id = Array.isArray(clan)
+              ? clan[0]
+              : clan.idClan || clan.id_clan;
             const nombre = Array.isArray(clan) ? clan[1] : clan.nombre;
             const lat = Array.isArray(clan) ? clan[2] : clan.latitud;
             const lon = Array.isArray(clan) ? clan[3] : clan.longitud;
-            const dkpTotal = Array.isArray(clan) ? clan[4] : (clan.dkpTotal || clan.dkp_total || 0);
+            const dkpTotal = Array.isArray(clan)
+              ? clan[4]
+              : clan.dkpTotal || clan.dkp_total || 0;
 
             return (
               <CircleMarker

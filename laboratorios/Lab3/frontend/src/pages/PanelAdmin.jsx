@@ -5,6 +5,7 @@ import {
   MapContainer,
   ImageOverlay,
   Marker,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
@@ -17,11 +18,23 @@ const bossIconMap = new L.Icon({
   popupAnchor: [0, -30],
 });
 
+// Ajusta el zoom para que el selector muestre el plano completo al cargar
+function FitMapToBounds({ bounds }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.fitBounds(bounds);
+  }, [map]);
+
+  return null;
+}
+
 function MapaSelector({ onCoordsChange }) {
   const [pos, setPos] = useState(null);
+  // Mismo rango que el resto del mapa (GeoJSON 2dsphere): clics en [0, 90]
   const bounds = [
     [0, 0],
-    [1000, 1000],
+    [90, 90],
   ];
 
   useMapEvents({
@@ -58,10 +71,10 @@ function PanelAdmin() {
     cupos_healer: 0,
     cupos_dps: 0,
   });
-  const [bossCoords, setBossCoords] = useState({ lat: 500, lng: 500 });
+  const [bossCoords, setBossCoords] = useState({ lat: 45, lng: 45 });
 
   const [personajeMover, setPersonajeMover] = useState("");
-  const [moverCoords, setMoverCoords] = useState({ lat: 500, lng: 500 });
+  const [moverCoords, setMoverCoords] = useState({ lat: 45, lng: 45 });
 
   const [godDkp, setGodDkp] = useState({ idPersonaje: "", cantidad: 0 });
   const [godLoot, setGodLoot] = useState({
@@ -833,7 +846,7 @@ function PanelAdmin() {
                   }
                   step="1"
                   min="0"
-                  max="1000"
+                  max="90"
                   style={{ width: "100%", padding: "6px" }}
                 />
               </div>
@@ -852,7 +865,7 @@ function PanelAdmin() {
                   }
                   step="1"
                   min="0"
-                  max="1000"
+                  max="90"
                   style={{ width: "100%", padding: "6px" }}
                 />
               </div>
@@ -869,7 +882,7 @@ function PanelAdmin() {
                 crs={L.CRS.Simple}
                 bounds={[
                   [0, 0],
-                  [1000, 1000],
+                  [90, 90],
                 ]}
                 style={{
                   height: "250px",
@@ -882,7 +895,13 @@ function PanelAdmin() {
                   url="/mapa_juego.png"
                   bounds={[
                     [0, 0],
-                    [1000, 1000],
+                    [90, 90],
+                  ]}
+                />
+                <FitMapToBounds
+                  bounds={[
+                    [0, 0],
+                    [90, 90],
                   ]}
                 />
                 <MapaSelector onCoordsChange={(c) => setBossCoords(c)} />

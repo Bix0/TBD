@@ -55,6 +55,19 @@ function RaidMapController({ onCenterChange }) {
   return null;
 }
 
+// Ajusta el zoom para que la imagen llene todo el contenedor al cargar
+// (con un paso extra de zoom para que no se vea tan pequeña)
+function FitMapToBounds({ bounds }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.fitBounds(bounds);
+    map.setZoom(map.getZoom() + 1);
+  }, [map]);
+
+  return null;
+}
+
 function PlayerMovementController({ activePersonajeId, onMove }) {
   useMapEvents({
     click(e) {
@@ -81,7 +94,7 @@ const MapaRaids = () => {
   const [personajes, setPersonajes] = useState([]); // Personajes del usuario actual
   const [todosPersonajesMapa, setTodosPersonajesMapa] = useState([]); // Todos los personajes geolocalizados
   const [selectedPersonaje, setSelectedPersonaje] = useState("");
-  const [mapCenter, setMapCenter] = useState({ lat: 500, lng: 500 });
+  const [mapCenter, setMapCenter] = useState({ lat: 45, lng: 45 });
 
   // Estados para Filtros
   const [filtroNombre, setFiltroNombre] = useState("");
@@ -187,9 +200,11 @@ const MapaRaids = () => {
     return cumpleNombre && cumpleRol;
   });
 
+  // El backend usa GeoJSON (2dsphere): lat [-90, 90], lng [-180, 180].
+  // El mapa del juego 0-1000 se mapea a 0-90 para que los clics generen coordenadas validas.
   const bounds = [
     [0, 0],
-    [1000, 1000],
+    [90, 90],
   ];
 
   return (
@@ -259,6 +274,7 @@ const MapaRaids = () => {
         className="leaflet-container"
       >
         <RaidMapController onCenterChange={setMapCenter} />
+        <FitMapToBounds bounds={bounds} />
         <PlayerMovementController
           activePersonajeId={activeId || selectedPersonaje}
           onMove={handlePersonajeMoved}

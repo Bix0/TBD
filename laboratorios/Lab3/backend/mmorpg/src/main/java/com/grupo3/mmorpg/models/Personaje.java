@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.geo.Point;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
@@ -22,7 +22,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 // REQUISITO: Índice compuesto para filtrar rápido por Clan + Clase + Rol
 // =====================================================================
 @CompoundIndexes({
-        @CompoundIndex(name = "clan_clase_rol_idx", def = "{'clanId': 1, 'clase': 1, 'rolClan': 1}")
+    @CompoundIndex(
+        name = "clan_clase_rol_idx",
+        def = "{'clanId': 1, 'clase': 1, 'rolClan': 1}"
+    ),
 })
 public class Personaje {
 
@@ -46,10 +49,10 @@ public class Personaje {
     private Integer puntosMerito = 0;
     private String rolClan;
 
-    // --- MANEJO GEOESPACIAL EN MONGODB ---
+    // --- MANEJO GEOESPACIAL EN MONGODB (GeoJSON + 2dsphere) ---
     @JsonIgnore
-    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2D)
-    private Point ubicacionActual;
+    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE)
+    private GeoJsonPoint ubicacionActual;
 
     private String regionMapa;
 
@@ -61,8 +64,11 @@ public class Personaje {
     @JsonProperty("latitud")
     public void setLatitud(Double latitud) {
         if (latitud != null) {
-            double x = this.ubicacionActual != null ? this.ubicacionActual.getX() : 0.0;
-            this.ubicacionActual = new Point(x, latitud);
+            double x =
+                this.ubicacionActual != null
+                    ? this.ubicacionActual.getX()
+                    : 0.0;
+            this.ubicacionActual = new GeoJsonPoint(x, latitud);
         }
     }
 
@@ -74,8 +80,11 @@ public class Personaje {
     @JsonProperty("longitud")
     public void setLongitud(Double longitud) {
         if (longitud != null) {
-            double y = this.ubicacionActual != null ? this.ubicacionActual.getY() : 0.0;
-            this.ubicacionActual = new Point(longitud, y);
+            double y =
+                this.ubicacionActual != null
+                    ? this.ubicacionActual.getY()
+                    : 0.0;
+            this.ubicacionActual = new GeoJsonPoint(longitud, y);
         }
     }
 }
