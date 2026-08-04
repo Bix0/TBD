@@ -2,7 +2,7 @@
 
 Esta lista contiene los 6 requerimientos técnicos avanzados de MongoDB que deben implementarse en el backend del proyecto.
 
-- [ ] **1. Modelado de Datos**
+- [X] **1. Modelado de Datos**
   - **Objetivo:** Justificar e implementar la decisión de diseño para los *Personajes*.
   - **Detalle:** Decidir si embeber los personajes dentro del documento del Jugador o referenciarlos en una colección propia, considerando que cada personaje participa en múltiples raids de forma independiente.
 
