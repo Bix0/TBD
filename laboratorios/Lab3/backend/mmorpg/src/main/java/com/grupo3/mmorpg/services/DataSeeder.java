@@ -41,10 +41,11 @@ public class DataSeeder implements CommandLineRunner {
         System.out.println("=== Inyectando Universo MMORPG (MongoDB) ===");
 
         // --- PUNTOS ESPACIALES EN MONGODB (GeoJSON: Longitud, Latitud) ---
-        GeoJsonPoint baseAlianza = new GeoJsonPoint(150.0, 150.0); // Esquina Inferior Izquierda
-        GeoJsonPoint baseHorda = new GeoJsonPoint(850.0, 850.0);   // Esquina Superior Derecha
-        GeoJsonPoint bossCastillo = new GeoJsonPoint(800.0, 200.0); // Zona Inferior Derecha (Bot)
-        GeoJsonPoint bossDragon = new GeoJsonPoint(200.0, 800.0);   // Zona Superior Izquierda (Top)
+        // ¡OJO! Las coordenadas se han escalado (/10) para no superar los límites geográficos (Lat: 90, Lng: 180)
+        GeoJsonPoint baseAlianza = new GeoJsonPoint(15.0, 15.0); // Esquina Inferior Izquierda
+        GeoJsonPoint baseHorda = new GeoJsonPoint(85.0, 85.0);   // Esquina Superior Derecha
+        GeoJsonPoint bossCastillo = new GeoJsonPoint(80.0, 20.0); // Zona Inferior Derecha (Bot)
+        GeoJsonPoint bossDragon = new GeoJsonPoint(20.0, 80.0);   // Zona Superior Izquierda (Top)
 
         // 1. Crear Jugadores
         String pw = passwordEncoder.encode("123456");
@@ -62,9 +63,9 @@ public class DataSeeder implements CommandLineRunner {
         Item baculo = itemRepository.save(new Item(null, "Báculo Sagrado", 140, 45, List.of("Mago")));
 
         // 4. Crear Personajes
-        personajeRepository.save(new Personaje(null, admin.getIdJugador(), null,
+        personajeRepository.save(new Personaje(null, admin.getIdJugador(), alianza.getIdClan(),
                 "Tato_Rey", "Guerrero", 60, "Alianza", 200, 1000, "Tanque", baseAlianza, "Base Alianza"));
-        personajeRepository.save(new Personaje(null, jugador2.getIdJugador(), null,
+        personajeRepository.save(new Personaje(null, jugador2.getIdJugador(), horda.getIdClan(),
                 "Thrall", "Guerrero", 60, "Horda", 190, 800, "DPS", baseHorda, "Base Horda"));
 
         // 5. Crear Raids

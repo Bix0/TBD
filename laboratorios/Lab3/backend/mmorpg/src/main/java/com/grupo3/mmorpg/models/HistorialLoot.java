@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -16,14 +19,20 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+// Estrategia de Índices (Laboratorio 3): Índice compuesto para consultar registros de botín por raid y personaje
+@CompoundIndexes({
+        @CompoundIndex(name = "raid_personaje_loot_idx", def = "{'raidId': 1, 'personajeId': 1}")
+})
 public class HistorialLoot {
 
     @Id
-    private String idHistorial; // Cambiado a String para el ObjectId de MongoDB
+    private String idHistorial; // ObjectId de MongoDB mapeado como String
 
     // En MongoDB guardamos las referencias (IDs) en lugar de hacer JOINs completos
+    @Indexed // Índice simple para acelerar la consulta de todo el loot entregado en una Raid específica
     private String raidId;
 
+    @Indexed // Índice simple para acelerar el historial de ítems obtenidos por un personaje
     private String personajeId;
 
     private String itemId;

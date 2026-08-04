@@ -7,8 +7,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
@@ -19,20 +22,26 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+// Estrategia de Índices (Laboratorio 3): Índice compuesto para optimizar consultas de clanes filtrados por facción
+@CompoundIndexes({
+        @CompoundIndex(name = "faccion_lider_idx", def = "{'faccion': 1, 'idLider': 1}")
+})
 public class Clan {
 
     @Id
-    private String idClan; // Cambiado a String para el ObjectId de MongoDB
+    private String idClan; // ObjectId de MongoDB mapeado como String
 
+    @Indexed(unique = true) // Índice único para garantizar que no existan clanes con nombres duplicados
     private String nombre;
 
     private String idLider; // Referencia al ID del personaje líder (String)
 
+    @Indexed // Índice simple para acelerar filtros rápidos por facción ("Alianza" o "Horda")
     private String faccion;
 
     // --- MANEJO GEOESPACIAL EN MONGODB (GeoJSON) ---
     @JsonIgnore
-    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE) // Obligatorio para consultas espaciales en clanes
+    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE) // Índice geoespacial obligatorio para consultas de cercanía a la sede del clan
     private GeoJsonPoint ubicacion;
 
     @JsonProperty("latitud")
