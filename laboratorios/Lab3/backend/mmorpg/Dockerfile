@@ -4,18 +4,12 @@ FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-# Copiar pom.xml y descargar dependencias (cache)
+# Copiar pom.xml y código fuente
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-# Copiar código fuente
 COPY src ./src
 
-# Eliminar tests para evitar errores de dependencias faltantes en el build de Docker
-RUN rm -rf src/test
-
 # Compilar sin ejecutar tests
-RUN mvn package -DskipTests -B
+RUN mvn clean package -DskipTests -B
 
 # Etapa 2: Ejecución con JDK 21
 FROM eclipse-temurin:21-jdk
