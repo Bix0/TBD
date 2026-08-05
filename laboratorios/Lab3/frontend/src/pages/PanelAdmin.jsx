@@ -275,13 +275,19 @@ function PanelAdmin() {
 
     const ganador = pjsInscritos[0];
     const itemGanado = items.find(
-      (i) => (i.id_item || i.idItem) === parseInt(itemRecompensa),
+      (i) => String(i.id_item || i.idItem || i._id) === String(itemRecompensa),
     );
+
+    if (!itemGanado) {
+      setMensajeSimulacion("❌ Error: No se encontró el ítem de recompensa seleccionado.");
+      setSimulando(false);
+      return;
+    }
 
     const costoFinal =
       itemGanado.ganancia_dkp !== undefined
         ? itemGanado.ganancia_dkp
-        : itemGanado.gananciaDkp;
+        : (itemGanado.gananciaDkp !== undefined ? itemGanado.gananciaDkp : 0);
     const idGanador = ganador.id_personaje || ganador.idPersonaje;
     const idItem = itemGanado.id_item || itemGanado.idItem;
     const idRaid = modalSimulacion.id_raid || modalSimulacion.idRaid;

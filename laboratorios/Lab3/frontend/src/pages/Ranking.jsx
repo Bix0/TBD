@@ -6,7 +6,7 @@ import MapaClanes from "../components/MapaClanes"; // 1. Importamos el component
 function Ranking() {
   const [personajes, setPersonajes] = useState([]);
 
-  const miUserId = parseInt(localStorage.getItem("userId"));
+  const miUserId = String(localStorage.getItem("userId") || "");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -17,8 +17,8 @@ function Ranking() {
       })
       .then((response) => {
         const rankingOrdenado = response.data.sort((a, b) => {
-          const puntosA = a.puntos_merito || a.puntosMerito || 0;
-          const puntosB = b.puntos_merito || b.puntosMerito || 0;
+          const puntosA = a.puntos_merito ?? a.puntosMerito ?? 0;
+          const puntosB = b.puntos_merito ?? b.puntosMerito ?? 0;
           return puntosB - puntosA;
         });
         setPersonajes(rankingOrdenado);
@@ -28,9 +28,7 @@ function Ranking() {
 
   const miIndice = personajes.findIndex(
     (p) =>
-      p.id_jugador === miUserId ||
-      p.idJugador === miUserId ||
-      p.jugador?.id === miUserId,
+      String(p.id_jugador || p.jugadorId || p.idJugador || "") === miUserId,
   );
   const miPosicionActual = miIndice !== -1 ? miIndice + 1 : null;
 

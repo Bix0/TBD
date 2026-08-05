@@ -116,8 +116,10 @@ function Inventario() {
               const idMochila = inv.id_inventario || inv.idInventario || index;
 
               const dataItem = catalogo.find(
-                (c) => (c.id_item || c.idItem) === idItemMochila,
-              ) || { nombre: "Ítem Desconocido", item_lvl: 0, ganancia_dkp: 0 };
+                (c) => String(c.id_item || c.idItem || c._id) === String(idItemMochila),
+              ) || { nombre: "Ítem Desconocido", itemLvl: 0, item_lvl: 0, gananciaDkp: 0, ganancia_dkp: 0 };
+
+              const cantidadObjeto = inv.cantidad || 1;
 
               return (
                 <div
@@ -141,7 +143,7 @@ function Inventario() {
                         color: inv.equipado ? "#81c784" : "#fff",
                       }}
                     >
-                      {dataItem.nombre} {inv.equipado && "(Equipado)"}
+                      {dataItem.nombre} {inv.equipado && "(Equipado)"} {cantidadObjeto > 1 && <span style={{ color: '#ffca28', fontSize: '15px', marginLeft: '6px' }}>x{cantidadObjeto}</span>}
                     </h3>
                     <div style={{ display: "flex", gap: "15px" }}>
                       <span
@@ -153,7 +155,7 @@ function Inventario() {
                           color: "#ff9800",
                         }}
                       >
-                        ⚔️ Poder: +{dataItem.item_lvl || dataItem.itemLvl}
+                        ⚔️ Poder: +{dataItem.itemLvl ?? dataItem.item_lvl ?? 0}
                       </span>
                       <span
                         style={{
@@ -165,7 +167,18 @@ function Inventario() {
                         }}
                       >
                         💎 Valor DKP:{" "}
-                        {dataItem.ganancia_dkp || dataItem.gananciaDkp}
+                        {dataItem.gananciaDkp ?? dataItem.ganancia_dkp ?? 0}
+                      </span>
+                      <span
+                        style={{
+                          backgroundColor: "#333",
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          fontSize: "13px",
+                          color: "#ffca28",
+                        }}
+                      >
+                        📦 Cantidad: {cantidadObjeto}
                       </span>
                     </div>
                   </div>

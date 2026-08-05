@@ -4,13 +4,18 @@ import com.grupo3.mmorpg.models.Personaje;
 import com.grupo3.mmorpg.models.Raid;
 import com.grupo3.mmorpg.repositories.PersonajeRepository;
 import com.grupo3.mmorpg.repositories.RaidRepository;
+import com.grupo3.mmorpg.services.LootService;
 import com.grupo3.mmorpg.services.RaidService;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import org.bson.Document;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -20,15 +25,21 @@ public class RaidController {
     private final RaidService raidService;
     private final RaidRepository raidRepository;
     private final PersonajeRepository personajeRepository;
+    private final LootService lootService;
+    private final MongoTemplate mongoTemplate;
 
     public RaidController(
         RaidService raidService,
         RaidRepository raidRepository,
-        PersonajeRepository personajeRepository
+        PersonajeRepository personajeRepository,
+        LootService lootService,
+        MongoTemplate mongoTemplate
     ) {
         this.raidService = raidService;
         this.raidRepository = raidRepository;
         this.personajeRepository = personajeRepository;
+        this.lootService = lootService;
+        this.mongoTemplate = mongoTemplate;
     }
 
     @PostMapping
@@ -167,7 +178,7 @@ public class RaidController {
         @RequestParam Integer costoDkp
     ) {
         try {
-            raidService.distribuirBotin(idPersonaje, idItem, idRaid, costoDkp);
+            lootService.distribuirBotin(idPersonaje, idItem, idRaid, costoDkp);
             return ResponseEntity.ok(
                 "Botín distribuido correctamente. DKP descontado."
             );
@@ -176,6 +187,29 @@ public class RaidController {
                 "Error al distribuir botín: " + e.getMessage()
             );
         }
+    }
+
+    /**
+     * Endpoint para simular/disparar el evento 'BOSS_DEATH' en MongoDB (raid_events).
+     * El listener ChangeStream captura este evento e invoca automáticamente LootService y RankingService.
+     */
+    @PostMapping("/{id}/evento-muerte-boss")
+    public ResponseEntity<String> registrarMuerteBoss(
+            @PathVariable String id,
+            @RequestParam(required = false) String clanId,
+            @RequestParam(required = false) String idItem,
+            @RequestParam(required = false) String idPersonaje) {
+        
+        Document event = new Document();
+        event.put("raidId", id);
+        event.put("eventType", "BOSS_DEATH");
+        if (clanId != null) event.put("clanId", clanId);
+        if (idItem != null) event.put("idItem", idItem);
+        if (idPersonaje != null) event.put("idPersonaje", idPersonaje);
+        event.put("timestamp", new Date());
+
+        mongoTemplate.insert(event, "raid_events");
+        return ResponseEntity.ok("Evento BOSS_DEATH registrado en MongoDB 'raid_events'. ChangeStream procesando...");
     }
 
     @GetMapping("/cercanas")
@@ -201,14 +235,18 @@ public class RaidController {
             }
         }
 
-        List<Raid> raidsCercanas = raidRepository.findRaidsCercanas(
-            lonConsulta,
-            latConsulta,
-            distancia
-        );
-        if (raidsCercanas.isEmpty()) {
-            return ResponseEntity.noContent().build();
+        try {
+            List<Raid> raidsCercanas = raidRepository.findRaidsCercanas(
+                lonConsulta,
+                latConsulta,
+                distancia
+            );
+            if (raidsCercanas != null && !raidsCercanas.isEmpty()) {
+                return ResponseEntity.ok(raidsCercanas);
+            }
+        } catch (Exception e) {
+            System.err.println("Aviso al consultar raids cercanas: " + e.getMessage());
         }
-        return ResponseEntity.ok(raidsCercanas);
+        return ResponseEntity.ok(raidRepository.findAll());
     }
 }

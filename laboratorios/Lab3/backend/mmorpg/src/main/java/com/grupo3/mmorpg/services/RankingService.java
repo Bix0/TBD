@@ -3,10 +3,14 @@ package com.grupo3.mmorpg.services;
 import com.grupo3.mmorpg.models.Personaje;
 import com.grupo3.mmorpg.repositories.PersonajeRepository;
 import com.grupo3.mmorpg.repositories.RaidRepository;
+import org.bson.Document;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.GroupOperation;
+import org.springframework.data.mongodb.core.aggregation.MergeOperation;
+import org.springframework.data.mongodb.core.aggregation.SortOperation;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -48,10 +52,39 @@ public class RankingService {
     }
 
     /**
-     * En MongoDB no existen vistas materializadas físicas, pero se pueden recalcular o refrescar cachés.
+     * Refresca la colección materializada 'clanes_top_ranking' en MongoDB
      */
     public boolean actualizarRanking() {
+        actualizarRankingMaterializadoClanes();
         return true;
+    }
+
+    /**
+     * Actualiza la colección materializada de clanes top en MongoDB mediante $merge pipeline
+     */
+    public void actualizarRankingMaterializadoClanes() {
+        try {
+            GroupOperation groupByClan = Aggregation.group("clanId")
+                    .sum("puntosMerito").as("puntosTotales")
+                    .count().as("totalMiembros")
+                    .avg("puntosMerito").as("dkpPromedio");
+
+            SortOperation sortByPuntos = Aggregation.sort(Sort.by(Sort.Direction.DESC, "puntosTotales"));
+
+            MergeOperation mergeToRanking = Aggregation.merge()
+                    .intoCollection("clanes_top_ranking")
+                    .build();
+
+            Aggregation pipeline = Aggregation.newAggregation(
+                    groupByClan,
+                    sortByPuntos,
+                    mergeToRanking
+            );
+
+            mongoTemplate.aggregate(pipeline, "personajes", Document.class);
+        } catch (Exception e) {
+            System.err.println("Aviso: No se pudo actualizar la colección materializada MongoDB 'clanes_top_ranking': " + e.getMessage());
+        }
     }
 
     /**

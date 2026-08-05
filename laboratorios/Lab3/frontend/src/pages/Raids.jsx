@@ -247,12 +247,16 @@ function Raids() {
             .map((raid) => {
               const listadoInscritos = inscritos[raid.id_raid || raid.idRaid] || [];
               const yoEstoyInscrito = listadoInscritos.some(
-                (ins) => ins[1] === parseInt(activeId),
+                (ins) => String(ins[1]) === String(activeId),
               );
 
-              const reqIlvl = raid.item_level_requerido || raid.itemLevelRequerido || 0;
+              const reqIlvl = raid.itemLevelRequerido ?? raid.item_level_requerido ?? 0;
               const pjIlvl = miPersonaje ? (miPersonaje.itemLevel ?? miPersonaje.item_level ?? 0) : 0;
               const pjRol = miPersonaje ? (miPersonaje.rolClan || miPersonaje.rol_clan || miPersonaje.rol || "").toLowerCase() : "";
+
+              const cTanque = raid.cuposTanque ?? raid.cupos_tanque ?? 0;
+              const cHealer = raid.cuposHealer ?? raid.cupos_healer ?? 0;
+              const cDps = raid.cuposDps ?? raid.cupos_dps ?? 0;
 
               const iLvlInsuficiente = miPersonaje && pjIlvl < reqIlvl;
               const sinCupo = miPersonaje && (raid[`cupos_${pjRol}`] ?? raid[`cupos${pjRol.charAt(0).toUpperCase() + pjRol.slice(1)}`] ?? 0) <= 0;
@@ -263,7 +267,7 @@ function Raids() {
 
               return (
                 <div
-                  key={raid.id_raid || raid.idRaid}
+                  key={raid.idRaid || raid.id_raid}
                   style={{
                     border:
                       iLvlInsuficiente && !yoEstoyInscrito
@@ -281,7 +285,7 @@ function Raids() {
                   </h3>
                   <p style={{ fontSize: "14px", color: "#aaa" }}>
                     Poder Requerido:{" "}
-                    <strong>{raid.item_level_requerido || raid.itemLevelRequerido || 0} iLvl</strong>
+                    <strong>{reqIlvl} iLvl</strong>
                   </p>
 
                   <div
@@ -294,33 +298,33 @@ function Raids() {
                   >
                     <span
                       style={{
-                        color: raid.cupos_tanque > 0 ? "#4caf50" : "#f44336",
+                        color: cTanque > 0 ? "#4caf50" : "#f44336",
                       }}
                     >
-                      T: {raid.cupos_tanque}{" "}
+                      T: {cTanque}{" "}
                     </span>{" "}
                     |
                     <span
                       style={{
-                        color: raid.cupos_healer > 0 ? "#4caf50" : "#f44336",
+                        color: cHealer > 0 ? "#4caf50" : "#f44336",
                       }}
                     >
                       {" "}
-                      H: {raid.cupos_healer}{" "}
+                      H: {cHealer}{" "}
                     </span>{" "}
                     |
                     <span
                       style={{
-                        color: raid.cupos_dps > 0 ? "#4caf50" : "#f44336",
+                        color: cDps > 0 ? "#4caf50" : "#f44336",
                       }}
                     >
                       {" "}
-                      DPS: {raid.cupos_dps}
+                      DPS: {cDps}
                     </span>
                   </div>
 
                   <button
-                    onClick={() => cargarInscritos(raid.id_raid)}
+                    onClick={() => cargarInscritos(raid.idRaid || raid.id_raid)}
                     style={{
                       width: "100%",
                       padding: "8px",
@@ -352,7 +356,7 @@ function Raids() {
                             borderBottom: "1px solid #333",
                             padding: "4px 0",
                             color:
-                              ins[1] === parseInt(activeId)
+                              String(ins[1]) === String(activeId)
                                 ? "#4caf50"
                                 : "#aaa",
                           }}
