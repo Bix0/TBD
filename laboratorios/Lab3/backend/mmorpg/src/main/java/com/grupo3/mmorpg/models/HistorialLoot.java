@@ -32,4 +32,9 @@ public class HistorialLoot {
     private LocalDateTime fecha = LocalDateTime.now();
 
     private String estadoLoot;
+
+    //nuevas variales agregadas
+    private Boolean participoRaid = true;
+
+    private String estadoPersonaje = "Activo";
 }
