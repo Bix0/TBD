@@ -380,6 +380,15 @@ public class RaidService {
             );
         }
 
+        // Regla de Schema Validation (tarea): no se entrega loot a un personaje caído
+        if ("Caido".equalsIgnoreCase(personaje.getEstado())) {
+            throw new IllegalArgumentException(
+                "El personaje " +
+                    personaje.getNombre() +
+                    " esta caido y no puede recibir loot"
+            );
+        }
+
         // 1) Descontar DKP (UPDATE Personaje SET puntos_merito = puntos_merito - costo)
         personaje.setPuntosMerito(personaje.getPuntosMerito() - costo);
         personajeRepository.save(personaje);
@@ -402,6 +411,8 @@ public class RaidService {
 
         // 3) Registrar historial de loot. El indice unico {raidId, itemId} garantiza
         //    que un mismo item no pueda asignarse dos veces en la misma raid.
+        //    Se incluyen los campos que exige el validador $jsonSchema de MongoSchemaConfig
+        //    (participoRaid=true y estadoPersonaje="Activo"/"Vivo").
         try {
             historialLootRepository.save(
                 new HistorialLoot(
@@ -410,7 +421,11 @@ public class RaidService {
                     idPersonaje,
                     idItem,
                     LocalDateTime.now(),
-                    "Botín Ganado"
+                    "Botín Ganado",
+                    true,
+                    personaje.getEstado() != null
+                        ? personaje.getEstado()
+                        : "Activo"
                 )
             );
         } catch (DuplicateKeyException e) {

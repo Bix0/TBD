@@ -56,6 +56,11 @@ public class Personaje {
 
     private String regionMapa;
 
+    // Estado de combate: "Activo" o "Caido" (fuera de combate).
+    // La regla de Schema Validation de loot exige que el personaje no esté caído
+    // al momento de la distribución (se registra en historial_loot.estadoPersonaje).
+    private String estado = "Activo";
+
     @JsonProperty("latitud")
     public Double getLatitud() {
         return ubicacionActual != null ? ubicacionActual.getY() : null;

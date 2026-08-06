@@ -52,4 +52,10 @@ public class HistorialLoot {
     private LocalDateTime fecha = LocalDateTime.now();
 
     private String estadoLoot;
+
+    // Campos exigidos por el validador $jsonSchema (MongoSchemaConfig):
+    // el loot solo se registra si el personaje participó en la raid y no estaba caído.
+    private Boolean participoRaid = true;
+
+    private String estadoPersonaje = "Activo";
 }
