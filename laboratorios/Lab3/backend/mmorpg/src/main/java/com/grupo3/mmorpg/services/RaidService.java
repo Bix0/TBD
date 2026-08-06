@@ -3,9 +3,9 @@ package com.grupo3.mmorpg.services;
 import com.grupo3.mmorpg.models.HistorialLoot;
 import com.grupo3.mmorpg.models.InscripcionRaid;
 import com.grupo3.mmorpg.models.Inventario;
-import com.grupo3.mmorpg.models.Item;
 import com.grupo3.mmorpg.models.Personaje;
 import com.grupo3.mmorpg.models.Raid;
+import com.grupo3.mmorpg.models.RepartoLoot;
 import com.grupo3.mmorpg.repositories.HistorialLootRepository;
 import com.grupo3.mmorpg.repositories.InscripcionRaidRepository;
 import com.grupo3.mmorpg.repositories.InventarioRepository;
@@ -13,10 +13,13 @@ import com.grupo3.mmorpg.repositories.ItemRepository;
 import com.grupo3.mmorpg.repositories.PersonajeRepository;
 import com.grupo3.mmorpg.repositories.RaidRepository;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -259,12 +262,8 @@ public class RaidService {
     }
 
     /**
-     * Distribucion de botin, equivalente a sp_distribuir_botin de schema.sql.
-     * Todo ocurre dentro de una transaccion multi-documento (replica set):
-     * 1) descuenta DKP al personaje
-     * 2) agrega el item a su inventario (o suma cantidad si ya lo posee)
-     * 3) registra el historial de loot
-     * 4) marca la asistencia del personaje en la raid
+     * Distribucion de botin individual (Panel Admin, modo "dioses").
+     * No exige inscripcion previa.
      */
     @Transactional
     public void distribuirBotin(
@@ -273,25 +272,115 @@ public class RaidService {
         String idRaid,
         Integer costoDkp
     ) {
-        // Validacion de existencia: personaje, item y raid deben existir
-        Personaje personaje = personajeRepository
-            .findById(idPersonaje)
+        raidRepository
+            .findById(idRaid)
             .orElseThrow(() ->
-                new IllegalArgumentException("Personaje no encontrado")
+                new IllegalArgumentException("Raid no encontrada")
             );
-        itemRepository
-            .findById(idItem)
-            .orElseThrow(() ->
-                new IllegalArgumentException("Item no encontrado")
+        entregarItem(
+            idRaid,
+            idPersonaje,
+            idItem,
+            costoDkp != null ? costoDkp : 0,
+            false
+        );
+    }
+
+    /**
+     * Distribucion MASIVA de loot dentro de una UNICA transaccion multi-documento.
+     *
+     * Garantias (tarea del Laboratorio 3):
+     * 1) Atomicidad: si cualquier reparto del lote falla, TODO se revierte
+     *    (rollback de DKP, inventario e historial).
+     * 2) Concurrencia: el indice unico {raidId, itemId} de historial_loot impide que
+     *    un mismo item quede asignado a mas de un personaje, incluso con peticiones
+     *    simultaneas (la segunda transaccion lanza DuplicateKeyException y se aborta).
+     * 3) Participacion: cada personaje del lote debe estar inscrito en la raid
+     *    (equivale a la regla "no participo -> no loot" de sp_distribuir_botin).
+     */
+    @Transactional
+    public void distribuirBotinMasivo(
+        String idRaid,
+        List<RepartoLoot> repartos
+    ) {
+        if (repartos == null || repartos.isEmpty()) {
+            throw new IllegalArgumentException(
+                "No se recibieron repartos en el lote"
             );
+        }
         raidRepository
             .findById(idRaid)
             .orElseThrow(() ->
                 new IllegalArgumentException("Raid no encontrada")
             );
 
+        // Validar que cada item aparezca una sola vez dentro del lote
+        Set<String> itemsLote = new HashSet<>();
+        for (RepartoLoot r : repartos) {
+            if (r.idPersonaje() == null || r.idItem() == null) {
+                throw new IllegalArgumentException(
+                    "Cada reparto debe incluir idPersonaje e idItem"
+                );
+            }
+            if (!itemsLote.add(r.idItem())) {
+                throw new IllegalArgumentException(
+                    "El item " + r.idItem() + " esta duplicado dentro del lote"
+                );
+            }
+        }
+
+        for (RepartoLoot r : repartos) {
+            entregarItem(
+                idRaid,
+                r.idPersonaje(),
+                r.idItem(),
+                r.costoDkp() != null ? r.costoDkp() : 0,
+                true
+            );
+        }
+    }
+
+    /**
+     * Nucleo de la entrega de un item. Equivalente a sp_distribuir_botin:
+     * 1) descuenta DKP 2) entrega el item al inventario 3) registra historial
+     * 4) marca asistencia. Todo corre dentro de la transaccion del llamante.
+     */
+    private void entregarItem(
+        String idRaid,
+        String idPersonaje,
+        String idItem,
+        int costo,
+        boolean validarParticipacion
+    ) {
+        Personaje personaje = personajeRepository
+            .findById(idPersonaje)
+            .orElseThrow(() ->
+                new IllegalArgumentException(
+                    "Personaje no encontrado: " + idPersonaje
+                )
+            );
+        itemRepository
+            .findById(idItem)
+            .orElseThrow(() ->
+                new IllegalArgumentException("Item no encontrado: " + idItem)
+            );
+
+        // Regla de participacion: debe estar inscrito en la raid
+        if (
+            validarParticipacion &&
+            !inscripcionRaidRepository.existsByRaidIdAndPersonajeId(
+                idRaid,
+                idPersonaje
+            )
+        ) {
+            throw new IllegalArgumentException(
+                "El personaje " +
+                    personaje.getNombre() +
+                    " no participo en esta raid"
+            );
+        }
+
         // 1) Descontar DKP (UPDATE Personaje SET puntos_merito = puntos_merito - costo)
-        int costo = costoDkp != null ? costoDkp : 0;
         personaje.setPuntosMerito(personaje.getPuntosMerito() - costo);
         personajeRepository.save(personaje);
 
@@ -311,17 +400,25 @@ public class RaidService {
             );
         }
 
-        // 3) Registrar historial de loot (INSERT INTO Historial_Loot)
-        historialLootRepository.save(
-            new HistorialLoot(
-                null,
-                idRaid,
-                idPersonaje,
-                idItem,
-                LocalDateTime.now(),
-                "Botín Ganado"
-            )
-        );
+        // 3) Registrar historial de loot. El indice unico {raidId, itemId} garantiza
+        //    que un mismo item no pueda asignarse dos veces en la misma raid.
+        try {
+            historialLootRepository.save(
+                new HistorialLoot(
+                    null,
+                    idRaid,
+                    idPersonaje,
+                    idItem,
+                    LocalDateTime.now(),
+                    "Botín Ganado"
+                )
+            );
+        } catch (DuplicateKeyException e) {
+            throw new IllegalArgumentException(
+                "El item ya fue asignado en esta raid a otro personaje " +
+                    "(indice unico raid+item)"
+            );
+        }
 
         // 4) Marcar asistencia del personaje en la raid (UPDATE Inscripcion_Raid SET asistio = TRUE)
         inscripcionRaidRepository

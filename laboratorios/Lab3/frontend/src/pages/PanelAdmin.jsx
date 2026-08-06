@@ -265,6 +265,13 @@ function PanelAdmin() {
       )
       .filter(Boolean);
 
+    if (pjsInscritos.length === 0) {
+      setSimulando(false);
+      return setMensajeSimulacion(
+        "❌ No hay personajes válidos inscritos para repartir loot.",
+      );
+    }
+
     pjsInscritos.sort((a, b) => {
       const dkpA =
         a.puntos_merito !== undefined ? a.puntos_merito : a.puntosMerito;
@@ -274,37 +281,43 @@ function PanelAdmin() {
     });
 
     const ganador = pjsInscritos[0];
+    // Comparación de strings: itemRecompensa guarda el ObjectId (ej. "6a725a..."),
+    // NO usar parseInt porque convierte el ObjectId a un número sin sentido.
     const itemGanado = items.find(
       (i) => String(i.id_item || i.idItem || i._id) === String(itemRecompensa),
     );
 
     if (!itemGanado) {
-      setMensajeSimulacion("❌ Error: No se encontró el ítem de recompensa seleccionado.");
       setSimulando(false);
-      return;
+      return setMensajeSimulacion("❌ No se encontró el ítem de recompensa.");
     }
 
     const costoFinal =
       itemGanado.ganancia_dkp !== undefined
         ? itemGanado.ganancia_dkp
-        : (itemGanado.gananciaDkp !== undefined ? itemGanado.gananciaDkp : 0);
+        : itemGanado.gananciaDkp !== undefined
+          ? itemGanado.gananciaDkp
+          : 0;
     const idGanador = ganador.id_personaje || ganador.idPersonaje;
     const idItem = itemGanado.id_item || itemGanado.idItem;
     const idRaid = modalSimulacion.id_raid || modalSimulacion.idRaid;
 
     setMensajeSimulacion(
-      `🏆 ¡Jefe Muerto! Entregando objeto a ${ganador.nombre}...`,
+      `🏆 ¡Jefe Muerto! Entregando ${itemGanado.nombre} a ${ganador.nombre}...`,
     );
 
     try {
-      await api.post(
-        `/api/raids/distribuir-loot?idPersonaje=${idGanador}&idItem=${idItem}&idRaid=${idRaid}&costoDkp=${costoFinal}`,
-      );
+      // Distribución vía endpoint MASIVO: 1 reparto (el ganador) en una transacción
+      // atómica, con validación de participación (inscrito) y garantía anti-duplicado
+      // del índice único {raidId, itemId}.
+      await api.post(`/api/raids/${idRaid}/distribuir-loot-masivo`, [
+        { idPersonaje: idGanador, idItem: idItem, costoDkp: costoFinal },
+      ]);
       await api.put(`/api/raids/${idRaid}/estado?estado=Completada`);
       await api.post("/api/ranking/refresh");
 
       setMensajeSimulacion(
-        `✅ Éxito: Se entregó el ítem a ${ganador.nombre} y se descontaron ${costoFinal} DKP.`,
+        `✅ Éxito: Se entregó ${itemGanado.nombre} a ${ganador.nombre} y se descontaron ${costoFinal} DKP.`,
       );
       cargarDatosAdmin();
     } catch (err) {
