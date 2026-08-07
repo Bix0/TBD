@@ -95,4 +95,14 @@ public class RankingController {
     public Map<String, Object> obtenerEstadisticasRanking() {
         return rankingService.obtenerEstadisticasRanking();
     }
+
+    /**
+     * Requerimiento 4: Obtiene el ranking de clanes basado en su desempeño en raids
+     * GET /api/ranking/clanes-desempeno
+     * @return Lista de mapas con los datos del ranking (daño total, asistencia, tiempo promedio)
+     */
+    @GetMapping("/clanes-desempeno")
+    public List<Map> obtenerRankingClanesPorDesempeno() {
+        return rankingService.obtenerRankingClanesPorDesempeno();
+    }
 }

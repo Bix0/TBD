@@ -18,6 +18,7 @@ public class DataSeeder implements CommandLineRunner {
     private final ItemRepository itemRepository;
     private final PersonajeRepository personajeRepository;
     private final RaidRepository raidRepository;
+    private final InscripcionRaidRepository inscripcionRaidRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(JugadorRepository jugadorRepository,
@@ -25,12 +26,14 @@ public class DataSeeder implements CommandLineRunner {
                       ItemRepository itemRepository,
                       PersonajeRepository personajeRepository,
                       RaidRepository raidRepository,
+                      InscripcionRaidRepository inscripcionRaidRepository,
                       PasswordEncoder passwordEncoder) {
         this.jugadorRepository = jugadorRepository;
         this.clanRepository = clanRepository;
         this.itemRepository = itemRepository;
         this.personajeRepository = personajeRepository;
         this.raidRepository = raidRepository;
+        this.inscripcionRaidRepository = inscripcionRaidRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -69,10 +72,23 @@ public class DataSeeder implements CommandLineRunner {
                 "Thrall", "Guerrero", 60, "Horda", 190, 800, "DPS", baseHorda, "Base Horda"));
 
         // 5. Crear Raids
-        raidRepository.save(new Raid(null, "Asalto al Castillo",
-                LocalDateTime.of(2026, 6, 10, 20, 0), "Programada", 150, 2, 2, 6, bossCastillo));
-        raidRepository.save(new Raid(null, "Cueva del Dragón",
-                LocalDateTime.of(2026, 6, 12, 19, 30), "Programada", 100, 1, 1, 3, bossDragon));
+        Raid raidCastillo = raidRepository.save(new Raid(null, "Asalto al Castillo",
+                LocalDateTime.of(2026, 6, 10, 20, 0), "Finalizada", 150, 2, 2, 6, 45, bossCastillo)); // 45 minutos
+        Raid raidDragon = raidRepository.save(new Raid(null, "Cueva del Dragón",
+                LocalDateTime.of(2026, 6, 12, 19, 30), "Finalizada", 100, 1, 1, 3, 30, bossDragon)); // 30 minutos
+
+        // 6. Crear Inscripciones para simular el desempeño en las Raids
+        Personaje p1 = personajeRepository.findByNombre("Tato_Rey").orElse(null);
+        Personaje p2 = personajeRepository.findByNombre("Thrall").orElse(null);
+
+        if (p1 != null && p2 != null) {
+            inscripcionRaidRepository.save(new InscripcionRaid(null, raidCastillo.getIdRaid(), p1.getIdPersonaje(), "Aprobada", true, 50000));
+            inscripcionRaidRepository.save(new InscripcionRaid(null, raidCastillo.getIdRaid(), p2.getIdPersonaje(), "Aprobada", true, 45000));
+            
+            inscripcionRaidRepository.save(new InscripcionRaid(null, raidDragon.getIdRaid(), p1.getIdPersonaje(), "Aprobada", true, 60000));
+            // p2 faltó a la segunda raid
+            inscripcionRaidRepository.save(new InscripcionRaid(null, raidDragon.getIdRaid(), p2.getIdPersonaje(), "Aprobada", false, 0));
+        }
 
         System.out.println("=== Datos inyectados con éxito en MongoDB ===");
     }

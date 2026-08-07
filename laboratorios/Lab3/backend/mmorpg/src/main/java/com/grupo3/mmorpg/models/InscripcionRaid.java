@@ -36,4 +36,7 @@ public class InscripcionRaid {
     private String estado;
 
     private Boolean asistio = false;
+
+    // Nuevo campo para Requerimiento 4: Desempeño
+    private Integer danoTotal = 0;
 }

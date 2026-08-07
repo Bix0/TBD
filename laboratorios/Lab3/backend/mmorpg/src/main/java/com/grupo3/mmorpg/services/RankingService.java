@@ -11,6 +11,12 @@ import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
 import org.springframework.data.mongodb.core.aggregation.MergeOperation;
 import org.springframework.data.mongodb.core.aggregation.SortOperation;
+import org.springframework.data.mongodb.core.aggregation.LookupOperation;
+import org.springframework.data.mongodb.core.aggregation.UnwindOperation;
+import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
+import org.springframework.data.mongodb.core.aggregation.ConditionalOperators;
+import org.springframework.data.mongodb.core.aggregation.ConvertOperators;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -161,5 +167,59 @@ public class RankingService {
         emptyStats.put("raids_totales", 0);
         emptyStats.put("dkp_promedio", 0.0);
         return emptyStats;
+    }
+
+    /**
+     * Requerimiento 4: Pipeline de agregación para calcular el Ranking de Clanes
+     * basado en el desempeño en raids (tiempo de finalización, asistencia, y daño total).
+     */
+    public List<Map> obtenerRankingClanesPorDesempeno() {
+        // Etapa 1: Proyección para convertir IDs de String a ObjectId para los lookups
+        // y mapear boolean 'asistio' a número 1 o 0 para poder sumarlo
+        ProjectionOperation convertIdsAndProject = Aggregation.project("danoTotal")
+                .and(ConvertOperators.ToObjectId.toObjectId("personajeId")).as("personajeIdObj")
+                .and(ConvertOperators.ToObjectId.toObjectId("raidId")).as("raidIdObj")
+                .and(ConditionalOperators.when(Criteria.where("asistio").is(true)).then(1).otherwise(0)).as("asistenciaNum");
+
+        // Etapa 2: Lookup con personajes para obtener de qué clan es el jugador
+        LookupOperation lookupPersonaje = Aggregation.lookup("personajes", "personajeIdObj", "_id", "personaje");
+        UnwindOperation unwindPersonaje = Aggregation.unwind("personaje", true);
+
+        // Etapa 3: Convertir clanId de personaje a ObjectId
+        ProjectionOperation projectClanId = Aggregation.project("danoTotal", "raidIdObj", "asistenciaNum", "personaje")
+                .and(ConvertOperators.ToObjectId.toObjectId("personaje.clanId")).as("clanIdObj");
+
+        // Etapa 4: Lookup con clanes para obtener el nombre del clan
+        LookupOperation lookupClan = Aggregation.lookup("clanes", "clanIdObj", "_id", "clan");
+        UnwindOperation unwindClan = Aggregation.unwind("clan", true);
+
+        // Etapa 5: Lookup con raids para obtener el tiempo de finalización
+        LookupOperation lookupRaid = Aggregation.lookup("raids", "raidIdObj", "_id", "raid");
+        UnwindOperation unwindRaid = Aggregation.unwind("raid", true);
+
+        // Etapa 6: Agrupar por el ID del Clan
+        GroupOperation groupOperation = Aggregation.group("clan._id")
+                .first("clan.nombre").as("nombreClan")
+                .sum("danoTotal").as("danoTotal")
+                .sum("asistenciaNum").as("asistenciaTotal")
+                .avg("raid.tiempoFinalizacionMinutos").as("tiempoPromedioRaid");
+
+        // Etapa 7: Ordenar por Daño Total (Descendente) y luego por Tiempo (Ascendente)
+        SortOperation sortOperation = Aggregation.sort(
+                Sort.by(Sort.Direction.DESC, "danoTotal")
+                    .and(Sort.by(Sort.Direction.ASC, "tiempoPromedioRaid")));
+
+        Aggregation pipeline = Aggregation.newAggregation(
+                convertIdsAndProject,
+                lookupPersonaje, unwindPersonaje,
+                projectClanId,
+                lookupClan, unwindClan,
+                lookupRaid, unwindRaid,
+                groupOperation,
+                sortOperation
+        );
+
+        AggregationResults<Map> results = mongoTemplate.aggregate(pipeline, "inscripciones_raid", Map.class);
+        return results.getMappedResults();
     }
 }

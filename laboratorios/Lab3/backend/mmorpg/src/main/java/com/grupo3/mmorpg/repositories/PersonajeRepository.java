@@ -14,6 +14,8 @@ import java.util.Optional;
 @Repository
 public interface PersonajeRepository extends MongoRepository<Personaje, String> {
 
+    Optional<Personaje> findByNombre(String nombre);
+
     List<Personaje> findByClanId(String clanId);
 
     List<Personaje> findByClase(String clase);

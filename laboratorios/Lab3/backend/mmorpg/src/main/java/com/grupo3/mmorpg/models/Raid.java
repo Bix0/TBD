@@ -50,6 +50,9 @@ public class Raid {
 
     private Integer cuposDps;
 
+    // Nuevo campo para Requerimiento 4: Cálculo de desempeño de raids
+    private Integer tiempoFinalizacionMinutos;
+
     // --- MANEJO GEOESPACIAL EN MONGODB (GeoJSON) ---
     @JsonIgnore
     @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE) // Índice geoespacial obligatorio para consultas $near o de proximidad al jefe

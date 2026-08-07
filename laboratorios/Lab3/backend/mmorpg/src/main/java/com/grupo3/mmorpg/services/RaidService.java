@@ -176,7 +176,7 @@ public class RaidService {
 
         // Registrar la inscripcion en su coleccion dedicada
         inscripcionRaidRepository.save(
-            new InscripcionRaid(null, idRaid, idPersonaje, "Inscrito", false)
+            new InscripcionRaid(null, idRaid, idPersonaje, "Inscrito", false, 0)
         );
         return "Inscripción exitosa.";
     }
