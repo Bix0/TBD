@@ -71,8 +71,8 @@ function Raids() {
       .catch((error) =>
         alert(
           "Error: " +
-          (error.response?.data ||
-            "No cumples los requisitos o ya estás inscrito."),
+            (error.response?.data ||
+              "No cumples los requisitos o ya estás inscrito."),
         ),
       );
   };
@@ -106,11 +106,14 @@ function Raids() {
     try {
       const res = await axios.get(`/api/personajes/healers-disponibles`, {
         ...configSeguridad,
-        params: { tankId: activeId, distancia: 500 }
+        params: { tankId: activeId, distancia: 500 },
       });
       setHealersCercanos(res.data || []);
     } catch (err) {
-      alert("Error o no se encontraron healers cerca: " + (err.response?.data || err.message));
+      alert(
+        "Error o no se encontraron healers cerca: " +
+          (err.response?.data || err.message),
+      );
     } finally {
       setCargandoHealers(false);
     }
@@ -145,7 +148,13 @@ function Raids() {
             <>
               <p style={{ margin: 0, color: "#81c784", fontSize: "18px" }}>
                 Personaje Activo: <strong>{miPersonaje.nombre}</strong> (Rol:{" "}
-                <b>{miPersonaje.rolClan || miPersonaje.rol_clan || miPersonaje.rol || "Sin Rol"}</b>)
+                <b>
+                  {miPersonaje.rolClan ||
+                    miPersonaje.rol_clan ||
+                    miPersonaje.rol ||
+                    "Sin Rol"}
+                </b>
+                )
               </p>
               <div
                 style={{
@@ -197,24 +206,70 @@ function Raids() {
         {/* ==================================================== */}
         {/* --- PANEL DE COBERTURA MÉDICA (HEALERS CERCANOS) --- */}
         {/* ==================================================== */}
-        <div style={{ backgroundColor: '#1a1a1a', padding: '15px', borderRadius: '8px', border: '1px solid #81c784', marginTop: '20px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ color: '#81c784', margin: 0 }}>🆘 Cobertura Médica (Healers Cercanos)</h3>
-            <button 
-              onClick={buscarHealers} 
-              style={{ padding: '8px 15px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+        <div
+          style={{
+            backgroundColor: "#1a1a1a",
+            padding: "15px",
+            borderRadius: "8px",
+            border: "1px solid #81c784",
+            marginTop: "20px",
+            marginBottom: "20px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <h3 style={{ color: "#81c784", margin: 0 }}>
+              🆘 Cobertura Médica (Healers Cercanos)
+            </h3>
+            <button
+              onClick={buscarHealers}
+              style={{
+                padding: "8px 15px",
+                backgroundColor: "#4caf50",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
             >
-              {cargandoHealers ? "Escaneando PostGIS..." : "Buscar Healers a 500m"}
+              {cargandoHealers
+                ? "Escaneando PostGIS..."
+                : "Buscar Healers a 500m"}
             </button>
           </div>
 
           {healersCercanos.length > 0 && (
-            <div style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div
+              style={{
+                marginTop: "15px",
+                display: "flex",
+                gap: "10px",
+                flexWrap: "wrap",
+              }}
+            >
               {healersCercanos.map((h) => (
-                <div key={h.idPersonaje || h.id_personaje} style={{ backgroundColor: '#242424', padding: '10px', borderRadius: '6px', borderLeft: '3px solid #81c784' }}>
-                  <strong style={{ color: '#fff' }}>💚 {h.nombre}</strong> ({h.clase})
+                <div
+                  key={h.idPersonaje || h.id_personaje}
+                  style={{
+                    backgroundColor: "#242424",
+                    padding: "10px",
+                    borderRadius: "6px",
+                    borderLeft: "3px solid #81c784",
+                  }}
+                >
+                  <strong style={{ color: "#fff" }}>💚 {h.nombre}</strong> (
+                  {h.clase})
                   <br />
-                  <span style={{ fontSize: '12px', color: '#aaa' }}>iLvl: {h.itemLevel || h.item_level} | Rol: {h.rolClan || h.rol_clan}</span>
+                  <span style={{ fontSize: "12px", color: "#aaa" }}>
+                    iLvl: {h.itemLevel || h.item_level} | Rol:{" "}
+                    {h.rolClan || h.rol_clan}
+                  </span>
                 </div>
               ))}
             </div>
@@ -240,26 +295,44 @@ function Raids() {
             .filter(
               (r) =>
                 r.estado === "Programada" &&
-                (r.item_level_requerido || r.itemLevelRequerido || 0) >= Ilvfiltro &&
+                (r.item_level_requerido || r.itemLevelRequerido || 0) >=
+                  Ilvfiltro &&
                 (Rolfiltro === "Todos" ||
                   r[`cupos_${Rolfiltro.toLowerCase()}`] > 0),
             )
             .map((raid) => {
-              const listadoInscritos = inscritos[raid.id_raid || raid.idRaid] || [];
+              const listadoInscritos =
+                inscritos[raid.id_raid || raid.idRaid] || [];
               const yoEstoyInscrito = listadoInscritos.some(
                 (ins) => String(ins[1]) === String(activeId),
               );
 
-              const reqIlvl = raid.itemLevelRequerido ?? raid.item_level_requerido ?? 0;
-              const pjIlvl = miPersonaje ? (miPersonaje.itemLevel ?? miPersonaje.item_level ?? 0) : 0;
-              const pjRol = miPersonaje ? (miPersonaje.rolClan || miPersonaje.rol_clan || miPersonaje.rol || "").toLowerCase() : "";
+              const reqIlvl =
+                raid.itemLevelRequerido ?? raid.item_level_requerido ?? 0;
+              const pjIlvl = miPersonaje
+                ? (miPersonaje.itemLevel ?? miPersonaje.item_level ?? 0)
+                : 0;
+              const pjRol = miPersonaje
+                ? (
+                    miPersonaje.rolClan ||
+                    miPersonaje.rol_clan ||
+                    miPersonaje.rol ||
+                    ""
+                  ).toLowerCase()
+                : "";
 
               const cTanque = raid.cuposTanque ?? raid.cupos_tanque ?? 0;
               const cHealer = raid.cuposHealer ?? raid.cupos_healer ?? 0;
               const cDps = raid.cuposDps ?? raid.cupos_dps ?? 0;
 
               const iLvlInsuficiente = miPersonaje && pjIlvl < reqIlvl;
-              const sinCupo = miPersonaje && (raid[`cupos_${pjRol}`] ?? raid[`cupos${pjRol.charAt(0).toUpperCase() + pjRol.slice(1)}`] ?? 0) <= 0;
+              const sinCupo =
+                miPersonaje &&
+                (raid[`cupos_${pjRol}`] ??
+                  raid[
+                    `cupos${pjRol.charAt(0).toUpperCase() + pjRol.slice(1)}`
+                  ] ??
+                  0) <= 0;
               const botonDeshabilitado =
                 !miPersonaje ||
                 (iLvlInsuficiente && !yoEstoyInscrito) ||
@@ -284,8 +357,7 @@ function Raids() {
                     {raid.nombre} {yoEstoyInscrito && "✅ (Inscrito)"}
                   </h3>
                   <p style={{ fontSize: "14px", color: "#aaa" }}>
-                    Poder Requerido:{" "}
-                    <strong>{reqIlvl} iLvl</strong>
+                    Poder Requerido: <strong>{reqIlvl} iLvl</strong>
                   </p>
 
                   <div

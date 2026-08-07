@@ -2,20 +2,20 @@ package com.grupo3.mmorpg.controllers;
 
 import com.grupo3.mmorpg.models.Personaje;
 import com.grupo3.mmorpg.models.Raid;
+import com.grupo3.mmorpg.models.RepartoLoot;
 import com.grupo3.mmorpg.repositories.PersonajeRepository;
 import com.grupo3.mmorpg.repositories.RaidRepository;
 import com.grupo3.mmorpg.services.LootService;
 import com.grupo3.mmorpg.services.RaidService;
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -195,11 +195,11 @@ public class RaidController {
      */
     @PostMapping("/{id}/evento-muerte-boss")
     public ResponseEntity<String> registrarMuerteBoss(
-            @PathVariable String id,
-            @RequestParam(required = false) String clanId,
-            @RequestParam(required = false) String idItem,
-            @RequestParam(required = false) String idPersonaje) {
-        
+        @PathVariable String id,
+        @RequestParam(required = false) String clanId,
+        @RequestParam(required = false) String idItem,
+        @RequestParam(required = false) String idPersonaje
+    ) {
         Document event = new Document();
         event.put("raidId", id);
         event.put("eventType", "BOSS_DEATH");
@@ -209,7 +209,30 @@ public class RaidController {
         event.put("timestamp", new Date());
 
         mongoTemplate.insert(event, "raid_events");
-        return ResponseEntity.ok("Evento BOSS_DEATH registrado en MongoDB 'raid_events'. ChangeStream procesando...");
+        return ResponseEntity.ok(
+            "Evento BOSS_DEATH registrado en MongoDB 'raid_events'. ChangeStream procesando..."
+        );
+    }
+
+    /**
+     * Distribución masiva de loot en una sola transacción atómica.
+     * Body: [{ "idPersonaje": "...", "idItem": "...", "costoDkp": 50 }, ...]
+     */
+    @PostMapping("/{id}/distribuir-loot-masivo")
+    public ResponseEntity<String> distribuirLootMasivo(
+        @PathVariable String id,
+        @RequestBody List<RepartoLoot> repartos
+    ) {
+        try {
+            raidService.distribuirBotinMasivo(id, repartos);
+            return ResponseEntity.ok(
+                "Lote distribuido correctamente. Transacción atómica confirmada."
+            );
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(
+                "Error al distribuir lote: " + e.getMessage()
+            );
+        }
     }
 
     @GetMapping("/cercanas")
@@ -245,7 +268,9 @@ public class RaidController {
                 return ResponseEntity.ok(raidsCercanas);
             }
         } catch (Exception e) {
-            System.err.println("Aviso al consultar raids cercanas: " + e.getMessage());
+            System.err.println(
+                "Aviso al consultar raids cercanas: " + e.getMessage()
+            );
         }
         return ResponseEntity.ok(raidRepository.findAll());
     }
