@@ -9,8 +9,11 @@ import com.grupo3.mmorpg.repositories.ItemRepository;
 import com.grupo3.mmorpg.repositories.PersonajeRepository;
 import com.grupo3.mmorpg.repositories.RaidRepository;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -23,11 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class LootService {
 
-    // Distancia máxima al jefe para recibir botín (Requisito de Proximidad: 50 unidades,
-    // equivalente a ST_DWithin de 50 uds del Lab 2).
-    // El mapa usa coordenadas tipo grados (0-90): 1 unidad ~= 111.32 km, por lo que las
-    // 50 unidades se convierten a metros para el $near/$maxDistance de 2dsphere.
-    private static final double DISTANCIA_PROXIMIDAD_JEFE_UNIDADES = 50.0;
+    // Distancia máxima al jefe para recibir botín (Requisito de Proximidad del Lab2: 50 uds
+    // en el mundo 0-1000 = 5% del mapa). Al escalar a 0-90 en MongoDB, el equivalente es
+    // 50 * 90/1000 = 4.5 uds (redondeado a 5). Se convierte a metros para $near/$maxDistance.
+    private static final double DISTANCIA_PROXIMIDAD_JEFE_UNIDADES = 5.0;
     private static final double DISTANCIA_PROXIMIDAD_JEFE =
         DISTANCIA_PROXIMIDAD_JEFE_UNIDADES * 111_320.0;
 
@@ -144,6 +146,10 @@ public class LootService {
             return;
         }
 
+        // Generar desempeño aleatorio (daño por inscrito + tiempo de finalización):
+        // alimenta el ranking por clan (Aggregation Pipeline de desempeño).
+        raidService.simularDesempenoRaid(raidId);
+
         // 1. Determinar el ítem a entregar
         Item itemAEntregar = null;
         if (idItemExplicit != null && !idItemExplicit.isEmpty()) {
@@ -231,67 +237,105 @@ public class LootService {
             return;
         }
 
-        // 3. Buscar candidatos entre los inscritos en la Raid que estén CERCA del jefe y tengan DKP suficiente
+        // 3. Candidatos: inscritos en la raid y cerca del jefe, ordenados por daño
+        // (los que más daño hicieron reciben loot primero).
         List<InscripcionRaid> inscripciones =
             inscripcionRaidRepository.findByRaidId(raidId);
-        if (inscripciones != null && !inscripciones.isEmpty()) {
-            List<Personaje> candidatosElegibles = new ArrayList<>();
-
+        Map<String, Integer> danoPorPersonaje = new HashMap<>();
+        List<Personaje> candidatos = new ArrayList<>();
+        if (inscripciones != null) {
             for (InscripcionRaid ins : inscripciones) {
                 if (idsPersonajesCercanos.contains(ins.getPersonajeId())) {
                     Optional<Personaje> pOpt = personajeRepository.findById(
                         ins.getPersonajeId()
                     );
                     if (pOpt.isPresent()) {
-                        Personaje p = pOpt.get();
-                        if (
-                            p.getPuntosMerito() != null &&
-                            p.getPuntosMerito() >= costoDkp
-                        ) {
-                            candidatosElegibles.add(p);
-                        }
+                        candidatos.add(pOpt.get());
+                        danoPorPersonaje.put(
+                            ins.getPersonajeId(),
+                            ins.getDanoTotal() != null ? ins.getDanoTotal() : 0
+                        );
                     }
                 }
             }
+        }
+        candidatos.sort((a, b) ->
+            Integer.compare(
+                danoPorPersonaje.getOrDefault(b.getIdPersonaje(), 0),
+                danoPorPersonaje.getOrDefault(a.getIdPersonaje(), 0)
+            )
+        );
 
-            if (!candidatosElegibles.isEmpty()) {
-                Personaje ganador = candidatosElegibles.get(
-                    random.nextInt(candidatosElegibles.size())
-                );
-                try {
-                    raidService.distribuirBotin(
-                        ganador.getIdPersonaje(),
-                        idItemFinal,
-                        raidId,
-                        costoDkp
-                    );
-                    System.out.println(
-                        "🎉 ¡Botín distribuido! Ganador cercano: " +
-                            ganador.getNombre() +
-                            " (ID: " +
-                            ganador.getIdPersonaje() +
-                            ") recibió '" +
-                            itemAEntregar.getNombre() +
-                            "' (DKP cobrado: " +
-                            costoDkp +
-                            ")"
-                    );
-                } catch (Exception e) {
-                    System.err.println(
-                        "Error distribuyendo botín automático: " +
-                            e.getMessage()
-                    );
+        // 4. Pool de ítems: el explícito primero (si viene), luego el resto por nivel desc.
+        List<Item> itemsDisponibles = new ArrayList<>();
+        if (itemAEntregar != null) {
+            itemsDisponibles.add(itemAEntregar);
+        }
+        itemRepository
+            .findAll()
+            .stream()
+            .filter(i -> !itemsDisponibles.contains(i))
+            .sorted(Comparator.comparingInt(
+                (Item i) -> i.getItemLvl() != null ? i.getItemLvl() : 0
+            ).reversed())
+            .forEach(itemsDisponibles::add);
+
+        // 5. Repartir 1 ítem DISTINTO por candidato (el mejor que pueda pagar con su DKP).
+        // El índice único {raidId, itemId} garantiza que un ítem nunca se asigne dos veces.
+        int asignados = 0;
+        for (Personaje ganador : candidatos) {
+            Item itemAsignado = null;
+            for (Item item : itemsDisponibles) {
+                int costoItem =
+                    item.getGananciaDkp() != null ? item.getGananciaDkp() : 0;
+                int dkp =
+                    ganador.getPuntosMerito() != null
+                        ? ganador.getPuntosMerito()
+                        : 0;
+                if (dkp >= costoItem) {
+                    itemAsignado = item;
+                    break;
                 }
-            } else {
+            }
+            if (itemAsignado == null) {
+                continue;
+            }
+            try {
+                raidService.distribuirBotin(
+                    ganador.getIdPersonaje(),
+                    itemAsignado.getIdItem(),
+                    raidId,
+                    itemAsignado.getGananciaDkp() != null
+                        ? itemAsignado.getGananciaDkp()
+                        : 0
+                );
+                itemsDisponibles.remove(itemAsignado);
+                asignados++;
                 System.out.println(
-                    "Aviso: Ningún personaje inscrito en la raid " +
-                        raidId +
-                        " se encuentra cerca del jefe con DKP suficiente."
+                    "🎁 ChangeStream: " +
+                    ganador.getNombre() +
+                    " recibió '" +
+                    itemAsignado.getNombre() +
+                    "'"
+                );
+            } catch (Exception e) {
+                System.err.println(
+                    "Error distribuyendo botín automático a " +
+                    ganador.getNombre() +
+                    ": " +
+                    e.getMessage()
                 );
             }
         }
+        if (asignados == 0) {
+            System.out.println(
+                "Aviso: Ningún personaje inscrito en la raid " +
+                    raidId +
+                    " está cerca del jefe con ítems disponibles."
+            );
+        }
 
-        // 4. Actualizar el estado de la raid a Completada
+        // 6. Actualizar el estado de la raid a Completada
         raid.setEstado("Completada");
         raidRepository.save(raid);
     }

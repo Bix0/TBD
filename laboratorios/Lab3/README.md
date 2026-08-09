@@ -1,4 +1,4 @@
-# Lab 2 - Gestor de Clanes y Raids con PostGIS + JPA
+# Lab 3 - Gestor de Clanes y Raids con MongoDB
 
 ###### Grupo 3 - TBD
 
@@ -14,63 +14,94 @@
 ## Descripcion
 
 MMORPG Manager que administra Clanes, Personajes, Raids, Inventario y Loot.
-**Lab2** migra desde JDBC puro (Lab1) hacia **JPA + Hibernate Spatial + PostGIS**
-para agregar **componentes espaciales** a la logica del juego.
+**Lab3** migra desde PostgreSQL/PostGIS (Lab2) hacia **MongoDB 6.0** desplegado
+como **Replica Set** (primario + secundario), aprovechando las capacidades
+avanzadas del motor documental: Schema Validation, Transacciones ACID
+multi-documento, Aggregation Pipelines, Indexación y Change Streams.
 
-### Diferencias con Lab1
+### Diferencias con Lab2
 
-| Aspecto | Lab1 | Lab2 |
+| Aspecto | Lab2 | Lab3 |
 |---------|------|------|
-| **ORM** | JDBC puro (prohibido) | JPA + Hibernate Spatial |
-| **BD** | PostgreSQL 15.3 | PostGIS 16-3.4 |
-| **Models** | POJOs manuales (~960 lineas) | Entities con Lombok (~413 lineas) |
-| **Repositories** | JdbcTemplate + RowMapper (~850 lineas) | JpaRepository (~268 lineas) |
-| **Soporte espacial** | No existia | Geometry, Point, ST_DWithin, ST_Distance |
-| **Docker** | Script manual | docker-compose con PostGIS + backend + frontend |
+| **BD** | PostgreSQL + PostGIS | MongoDB 6.0 (Replica Set `rs0`) |
+| **ORM** | JPA + Hibernate Spatial | Spring Data MongoDB |
+| **Transacciones** | SQL | ACID multi-documento (`MongoTransactionManager`) |
+| **Validación** | Triggers/SP en SQL | `$jsonSchema` a nivel de colección |
+| **Ranking** | Vistas materializadas SQL | Aggregation Pipelines + colección materializada (`$merge`) |
+| **Reactividad** | No existía | Change Streams (muerte del Boss → Loot automático) |
 
 ---
 
 ## Tecnologias
 
-- **Base de datos**: PostGIS 16-3.4 (PostgreSQL + extensiones espaciales)
-- **Backend**: Java 21 + Spring Boot 4.0.6
-- **ORM**: Spring Data JPA + Hibernate Spatial + Hibernate Core
-- **Lombok**: Reduce boilerplate en Entities
-- **API REST**: Spring WebMVC
-- **Seguridad**: JWT + BCrypt
+- **Base de datos**: MongoDB 6.0 en Replica Set (`rs0`: `mongo-primary` + `mongo-secondary`)
+- **Backend**: Java 21 + Spring Boot 3.2.4 + Spring Data MongoDB
+- **Seguridad**: JWT (jjwt) + BCrypt + RBAC (rutas por rol Admin/Usuario)
 - **Frontend**: React 19 + Vite + Axios + Leaflet
 
 ---
 
-## Features Implementadas
+## Las 6 tareas del enunciado (MongoDB Avanzado)
 
-### Migracion a JPA
-- Models POJO a Entities con @Entity, @Table, Lombok
-- Repositorios JDBC a Interfaces JpaRepository
-- Services actualizados con @Transactional
-- DataSeeder migrado a repositorios JPA
-- SPs, Triggers, MV mantenidas en schema.sql
+### 1. Modelado de Datos (embedding vs referencing)
+Se decidió **referenciar** (colección propia `personajes`) en lugar de embeber
+los personajes dentro del documento `jugadores`. Justificación: cada personaje
+participa de forma independiente en múltiples raids, por lo que embeberlos haría
+el documento del jugador crecer sin límite y complicaría consultar personajes de
+forma aislada (por clan, clase o rol). Las inscripciones a raids también viven en
+una colección propia (`inscripciones_raid`) con referencias a `raidId` y `personajeId`.
+Referencias guardadas como Strings (ObjectId). Ver `Justificación del Modelado de Datos.docx`.
 
-### Componente Espacial (PostGIS)
-- Columnas Point(4326) en Clan (sede), Raid (boss), Personaje (ubicacion), Auditoria (suceso)
-- Mapa 1000x1000 con imagen /mapa_juego.png y Leaflet CRS.Simple
+### 2. Validación de Esquema ($jsonSchema)
+`MongoSchemaConfig` aplica validación **estricta** (`validationLevel: strict`,
+`validationAction: error`) a la colección `historial_loot`:
+- `required`: `raidId`, `personajeId`, `itemId`, `participoRaid`, `estadoPersonaje`
+- `participoRaid` debe ser **`true`** (impide asignar loot a un personaje que no participó)
+- `estadoPersonaje` solo `"Activo"` o `"Vivo"` (**rechaza personajes "Caido"**)
 
-### Tareas PostGIS
-- **Clanes cercanos**: GET /api/clanes/cercanos?lat=X&lon=Y&distancia=Z (ST_DWithin)
-- **Mapa de calor**: MV mv_calor_clanes + endpoint GET /api/clanes/mapa-calor
-- **SP loot por proximidad**: sp_distribuir_botin_proximidad (solo entrega loot a menos de 50 uds del boss)
-- **Formacion de grupos**: GET /api/personajes/healers-disponibles?tankId=X&distancia=Y (ST_DWithin)
-- **Auditoria territorial**: Trigger captura coordenadas del nuevo lider + mapa Sedes de Poder
+Como `$jsonSchema` no puede hacer `$lookup`, la regla se refuerza en el servicio
+(`RaidService.entregarItem`): valida que el personaje esté inscrito en la raid y
+que no esté caído antes de asignar el loot.
 
-### Funcionalidades Adicionales
-- Todos los personajes visibles en el mapa de raids
-- Click en mapa para mover personaje (PATCH /api/personajes/{id}/mover)
-- Unirse/salir de clanes con re-spawn en base de faccion
-- Panel Admin con mapa clickeable para coordinar boss
-- Login/registro JWT con roles (Admin/Usuario)
-- Inscripcion a raids con validacion de cupos e item level
-- Simulacion de batalla con distribucion de loot
-- Historial de botin por jugador
+### 3. Transacción Multi-Documento (ACID)
+- `MongoConfig` define el `MongoTransactionManager` (habilita `@Transactional` en MongoDB).
+- `POST /api/raids/{id}/distribuir-loot-masivo` (`distribuirBotinMasivo`) distribuye
+  un lote de ítems en **una única transacción**: descuenta DKP, actualiza inventario,
+  inserta historial y marca asistencia.
+- **Anti-duplicado ante concurrencia**: índice único `{raidId, itemId}` en
+  `historial_loot` + manejo de `DuplicateKeyException` → un mismo ítem jamás se
+  asigna a dos personajes.
+
+### 4. Aggregation Pipeline
+`GET /api/ranking/clanes-desempeno` (`RankingService.obtenerRankingClanesPorDesempeno`)
+calcula el ranking de clanes por desempeño en raids con:
+`$project` (conversión de IDs a ObjectId, asistencia a 0/1) → `$lookup`/`$unwind`
+(personajes, clanes, raids) → `$group` por clan (suma de daño, suma de asistencia,
+promedio de tiempo de finalización) → `$sort` por daño desc / tiempo asc.
+
+### 5. Índices
+| Tipo | Colección | Índice |
+|------|-----------|--------|
+| Compuesto | `personajes` | `{clanId, clase, rolClan}` (filtrar disponibles por clase/rol dentro del clan) |
+| Único | `personajes` / `raids` / `items` / `clanes` | `nombre` |
+| Único | `jugadores` | `username` |
+| Único compuesto | `inscripciones_raid` | `{raidId, personajeId}` |
+| Único compuesto | `historial_loot` | `{raidId, itemId}` |
+| TTL | `raid_events` | `timestamp` (expira en 1 hora) |
+| Texto | `items` | `clasesPermitidas` |
+| Geoespacial (2dsphere) | `personajes.ubicacionActual`, `raids.ubicacionBoss`, `clanes.ubicacion` | consultas `$near` |
+
+### 6. Change Streams (Reactividad)
+- `ChangeStreamConfig` escucha la colección **`raid_events`** con filtro
+  `operationType=insert` + `eventType=BOSS_DEATH`.
+- `RaidBossListener` al detectar la muerte del Boss:
+  1. Llama a `LootService.distributeBossLoot`: reparte **1 ítem distinto por
+     inscrito** cercano al boss (radio de 5 uds, los mejores ítems al mejor
+     desempeño; el índice único `{raidId, itemId}` evita repeticiones).
+  2. Actualiza la colección materializada **`clanes_top_ranking`** con `$merge`
+     (pipeline por DKP).
+- Se dispara desde `POST /api/raids/{id}/evento-muerte-boss` (o el botón
+  "💀 Muerte del Boss (ChangeStream)" del Panel Admin).
 
 ---
 
@@ -84,12 +115,15 @@ para agregar **componentes espaciales** a la logica del juego.
 docker compose up -d --build
 ```
 
+El replica set se inicializa solo (`mongo-setup` con retry + healthchecks).
+
 ### Acceso
 | Servicio | URL |
 |----------|-----|
 | **Frontend** | http://localhost |
 | **Backend API** | http://localhost:8080 |
-| **PostGIS** | localhost:5435 |
+| **MongoDB primario** | localhost:27017 (RS `rs0`) |
+| **MongoDB secundario** | localhost:27018 |
 
 ### Credenciales de prueba
 | Usuario | Contrasena | Rol |
@@ -98,6 +132,18 @@ docker compose up -d --build
 | jugador2 | 123456 | Usuario |
 | jugador3 | 123456 | Usuario |
 
+### Endpoints principales
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/auth/login` | Login JWT |
+| GET | `/api/personajes`, `/api/items`, `/api/clanes`, `/api/raids` | CRUD / listados |
+| POST | `/api/raids/{id}/inscribir` | Inscripción con validación de item level y cupos |
+| POST | `/api/raids/{id}/distribuir-loot-masivo` | Distribución de loot transaccional (lote) |
+| POST | `/api/raids/{id}/evento-muerte-boss` | Dispara el ChangeStream (loot + ranking) |
+| GET | `/api/ranking/clanes-desempeno` | Aggregation Pipeline: ranking por clan |
+| GET | `/api/clanes/auditoria` | Historial de cambios de liderazgo (Sedes de Poder) |
+| GET | `/api/clanes/mapa-calor` | Mapa de calor con DKP real por clan |
+
 ---
 
 ## Paginas del Frontend
@@ -105,13 +151,13 @@ docker compose up -d --build
 | Ruta | Contenido |
 |------|-----------|
 | / | Login / Registro |
-| /personajes | Mis personajes + seleccionar activo |
-| /raids | Mapa con raids y personajes + inscripcion |
+| /personajes | Mis personajes + seleccionar activo + unirse/salir de clan |
+| /raids | Mapa de raids, inscripción y rango de loot del boss |
 | /inventario | Inventario del personaje activo |
-| /historial | Historial de botin |
-| /ranking | Ranking DKP + Mapa de Calor |
-| /facciones | Tablas Alianza/Horda + Mapa Clanes + Sedes de Poder |
-| /admin | Panel Admin (crear raids, items, simular batallas) |
+| /historial | Historial de botín |
+| /ranking | Ranking DKP global + Ranking por Clan (desempeño en raids) |
+| /facciones | Tablas Alianza/Horda + Mapa (calor / clanes cercanos / sedes de poder) + Historial de Reyes |
+| /admin | Panel Admin (crear raids/items, simulador, botón Muerte del Boss) |
 
 ---
 
@@ -120,21 +166,25 @@ docker compose up -d --build
 ```
 backend/mmorpg/
   src/main/java/com/grupo3/mmorpg/
-    models/           10 Entities JPA con Lombok
-    repositories/     7 JpaRepository interfaces
-    services/         Logica de negocio
+    config/           MongoConfig (transacciones), MongoSchemaConfig ($jsonSchema + índices),
+                      ChangeStreamConfig (listener raid_events)
+    listeners/        RaidBossListener (muerte del Boss → loot + ranking)
+    models/           Documentos MongoDB (Jugador, Personaje, Clan, Raid, Item,
+                      InscripcionRaid, Inventario, HistorialLoot, AuditoriaLiderazgo)
+    repositories/     Interfaces MongoRepository (incluye AuditoriaLiderazgoRepository)
+    services/         LootService, RaidService, RankingService, ClanService, ...
     controllers/      REST endpoints
-  src/main/resources/
-    application.properties
-    schema.sql        SPs, Triggers, MV, indices GIST
 ```
 
 ---
 
 ## Notas Tecnicas
 
-- **SRID**: 4326 (WGS84) para compatibilidad con PostGIS, aunque el mapa usa CRS.Simple con coordenadas 0-1000
-- **PostGIS**: Las extensiones se crean automaticamente via schema.sql
-- **Indices GIST**: Creados en columnas espaciales de Clan, Raid, Auditoria_Liderazgo
-- **Vistas Materializadas**: mv_ranking_clan (ranking de personajes) y mv_calor_clanes (mapa de calor)
-- **Triggers**: 7 triggers incluyendo validacion de item level, auditoria de liderazgo (con coordenadas), y gestion de inventario
+- **Proximidad del loot**: 50 uds en el mundo 0-1000 del Lab2 = 5% del mapa; al
+  escalar a 0-90 en MongoDB equivale a ~4.5 uds (se usa 5). El círculo rojo del
+  mapa de raids muestra el rango real.
+- **Ascenso de líder por DKP**: al inyectar DKP, si un personaje supera al líder
+  de su clan, asume el liderazgo automáticamente y queda auditado (Historial de Reyes).
+- **Desempeño por raid**: al completarse una raid se generan `danoTotal` y
+  `tiempoFinalizacionMinutos` aleatorios (20-80 min, 10k-100k de daño) para
+  alimentar el ranking por clan.

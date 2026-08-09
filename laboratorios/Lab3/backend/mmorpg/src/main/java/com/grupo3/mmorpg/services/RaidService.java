@@ -87,19 +87,34 @@ public class RaidService {
             // Randomizador de desempeño: al completarse la raid se generan el daño total
             // por inscrito y el tiempo de finalización (antes eran valores hardcodeados del seeder).
             if ("Completada".equalsIgnoreCase(estado)) {
-                raid.setTiempoFinalizacionMinutos(20 + new Random().nextInt(61)); // 20-80 min
-                for (InscripcionRaid ins : inscripcionRaidRepository.findByRaidId(idRaid)) {
-                    if (Boolean.TRUE.equals(ins.getAsistio())) {
-                        ins.setDanoTotal(10_000 + new Random().nextInt(90_001)); // 10k-100k
-                        inscripcionRaidRepository.save(ins);
-                    }
-                }
+                simularDesempenoRaid(idRaid);
             }
 
             raidRepository.save(raid);
             return 1;
         }
         return 0;
+    }
+
+    /**
+     * Genera desempeño aleatorio para una raid completada: tiempo de finalización
+     * (20-80 min) y daño total (10k-100k) para TODOS los inscritos (participaron del kill).
+     * Alimenta el ranking por clan (Aggregation Pipeline de desempeño).
+     */
+    @Transactional
+    public void simularDesempenoRaid(String idRaid) {
+        Raid raid = raidRepository.findById(idRaid).orElse(null);
+        if (raid == null) {
+            return;
+        }
+        Random random = new Random();
+        raid.setTiempoFinalizacionMinutos(20 + random.nextInt(61)); // 20-80 min
+        for (InscripcionRaid ins : inscripcionRaidRepository.findByRaidId(idRaid)) {
+            ins.setAsistio(true);
+            ins.setDanoTotal(10_000 + random.nextInt(90_001)); // 10k-100k
+            inscripcionRaidRepository.save(ins);
+        }
+        raidRepository.save(raid);
     }
 
     @Transactional

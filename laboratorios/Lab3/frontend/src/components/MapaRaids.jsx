@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   MapContainer,
   ImageOverlay,
+  CircleMarker,
   Marker,
   Popup,
+  Tooltip,
   useMap,
   useMapEvents,
 } from "react-leaflet";
@@ -32,6 +34,50 @@ const otherPlayerIcon = new L.Icon({
   iconAnchor: [16, 32],
   popupAnchor: [0, -32],
 });
+
+// Rango de dropeo de loot (debe coincidir con DISTANCIA_PROXIMIDAD_JEFE_UNIDADES del backend):
+// 50 uds en el mundo 0-1000 del Lab2 = 5% del mapa -> 4.5 uds en el mundo 0-90 (~5).
+const RADIO_LOOT_UDS = 5;
+
+// Círculo del rango de loot en UNIDADES del mapa (se recalcula con el zoom,
+// igual que el radio de búsqueda del mapa de clanes).
+function RadioLoot({ center, radioUnidades }) {
+  const map = useMap();
+  const [radioPx, setRadioPx] = useState(0);
+
+  useEffect(() => {
+    const recalcular = () => {
+      const p1 = map.latLngToLayerPoint([0, 0]);
+      const p2 = map.latLngToLayerPoint([1, 1]);
+      const pxPorUnidad = Math.abs(p2.y - p1.y) || 1;
+      setRadioPx(Math.max(radioUnidades * pxPorUnidad, 2));
+    };
+    recalcular();
+    map.on("zoom zoomend", recalcular);
+    return () => {
+      map.off("zoom zoomend", recalcular);
+    };
+  }, [map, radioUnidades]);
+
+  return (
+    <CircleMarker
+      center={center}
+      pathOptions={{
+        color: "#ff4b4b",
+        fillColor: "#ff0000",
+        fillOpacity: 0.12,
+        dashArray: "6, 6",
+      }}
+      radius={radioPx}
+    >
+      <Tooltip permanent direction="bottom">
+        <span style={{ fontSize: "11px", color: "#ff4b4b" }}>
+          Rango de loot: {radioUnidades} uds
+        </span>
+      </Tooltip>
+    </CircleMarker>
+  );
+}
 
 function RaidMapController({ onCenterChange }) {
   const map = useMap();
@@ -68,9 +114,10 @@ function FitMapToBounds({ bounds }) {
   return null;
 }
 
-function PlayerMovementController({ activePersonajeId, onMove }) {
+function PlayerMovementController({ activePersonajeId, onMove, onMapClick }) {
   useMapEvents({
     click(e) {
+      if (onMapClick) onMapClick();
       if (!activePersonajeId) return;
       const { lat, lng } = e.latlng;
       const roundedLat = Math.round(lat);
@@ -96,6 +143,7 @@ const MapaRaids = () => {
   const [selectedPersonaje, setSelectedPersonaje] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 45, lng: 45 });
   const [inscritas, setInscritas] = useState(new Set()); // Raids a las que ya te inscribiste en esta sesión
+  const [raidSeleccionada, setRaidSeleccionada] = useState(null); // Raid con popup abierto (para mostrar rango de loot)
 
   // Estados para Filtros
   const [filtroNombre, setFiltroNombre] = useState("");
@@ -294,6 +342,7 @@ const MapaRaids = () => {
         <PlayerMovementController
           activePersonajeId={activeId || selectedPersonaje}
           onMove={handlePersonajeMoved}
+          onMapClick={() => setRaidSeleccionada(null)}
         />
         <ImageOverlay url="/mapa_juego.png" bounds={bounds} />
 
@@ -380,7 +429,12 @@ const MapaRaids = () => {
           if (lat === 0 && lon === 0) return null;
 
           return (
-            <Marker key={raid.idRaid} position={[lat, lon]} icon={bossIcon}>
+            <Marker
+              key={raid.idRaid}
+              position={[lat, lon]}
+              icon={bossIcon}
+              eventHandlers={{ click: () => setRaidSeleccionada(raid.idRaid) }}
+            >
               <Popup>
                 <div style={{ textAlign: "center", minWidth: "180px" }}>
                   <strong style={{ color: "#aa3bff", fontSize: "16px" }}>
@@ -438,6 +492,24 @@ const MapaRaids = () => {
             </Marker>
           );
         })}
+
+        {/* Círculo del rango de loot de la raid seleccionada (popup abierto) */}
+        {(() => {
+          const raidSel = raids.find((r) => r.idRaid === raidSeleccionada);
+          if (!raidSel) return null;
+          const lat =
+            raidSel.latitud ||
+            raidSel.ubicacionBoss?.y ||
+            raidSel.ubicacionBoss?.coordinates?.[1] ||
+            0;
+          const lon =
+            raidSel.longitud ||
+            raidSel.ubicacionBoss?.x ||
+            raidSel.ubicacionBoss?.coordinates?.[0] ||
+            0;
+          if (lat === 0 && lon === 0) return null;
+          return <RadioLoot center={[lat, lon]} radioUnidades={RADIO_LOOT_UDS} />;
+        })()}
       </MapContainer>
     </div>
   );
