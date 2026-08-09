@@ -260,6 +260,31 @@ function PanelAdmin() {
     }
   };
 
+  // Dispara el evento BOSS_DEATH en raid_events: el ChangeStream del backend
+  // reparte el loot automáticamente (ganador aleatorio entre inscritos cercanos
+  // al boss con DKP suficiente) y actualiza la colección materializada de clanes.
+  const dispararMuerteBoss = async () => {
+    if (!modalSimulacion) return;
+    const idRaid = modalSimulacion.id_raid || modalSimulacion.idRaid;
+    setMensajeSimulacion(
+      "💀 ¡Jefe derrotado! El ChangeStream está procesando el loot...",
+    );
+    try {
+      const params = itemRecompensa ? { idItem: itemRecompensa } : {};
+      const res = await api.post(
+        `/api/raids/${idRaid}/evento-muerte-boss`,
+        null,
+        { params },
+      );
+      setMensajeSimulacion(res.data);
+      cargarDatosAdmin();
+    } catch (err) {
+      setMensajeSimulacion(
+        "❌ Error: " + (err.response?.data || err.message),
+      );
+    }
+  };
+
   const finalizarBatalla = async (inscritos) => {
     const pjsInscritos = inscritos
       .map((ins) =>
@@ -1122,6 +1147,21 @@ function PanelAdmin() {
                 }}
               >
                 {simulando ? "Batallando..." : "Iniciar Simulación"}
+              </button>
+              <button
+                onClick={dispararMuerteBoss}
+                disabled={simulando}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: simulando ? "#444" : "#f44336",
+                  color: simulando ? "#888" : "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: simulando ? "not-allowed" : "pointer",
+                  fontWeight: "bold",
+                }}
+              >
+                💀 Muerte del Boss (ChangeStream)
               </button>
             </div>
           </div>

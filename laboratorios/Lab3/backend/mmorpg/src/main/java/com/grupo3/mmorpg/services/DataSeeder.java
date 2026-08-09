@@ -135,22 +135,37 @@ public class DataSeeder implements CommandLineRunner {
         );
 
         // 5. Crear Raids
+        // NOTA: el tiempo de finalización ya NO se hardcodea (antes 45 y 30 minutos);
+        // el randomizador lo genera al completar la raid (RaidService.cambiarEstadoRaid).
         Raid raidCastillo = raidRepository.save(new Raid(null, "Asalto al Castillo",
-                LocalDateTime.of(2026, 6, 10, 20, 0), "Finalizada", 150, 2, 2, 6, 45, bossCastillo)); // 45 minutos
+                LocalDateTime.of(2026, 6, 10, 20, 0), "Finalizada", 150, 2, 2, 6, 0, bossCastillo));
         Raid raidDragon = raidRepository.save(new Raid(null, "Cueva del Dragón",
-                LocalDateTime.of(2026, 6, 12, 19, 30), "Finalizada", 100, 1, 1, 3, 30, bossDragon)); // 30 minutos
+                LocalDateTime.of(2026, 6, 12, 19, 30), "Finalizada", 100, 1, 1, 3, 0, bossDragon));
 
         // 6. Crear Inscripciones para simular el desempeño en las Raids
+        // NOTA: el daño total ya NO se hardcodea (antes 50000 / 45000 / 60000 / 0);
+        // el randomizador lo genera al completar la raid (RaidService.cambiarEstadoRaid).
         Personaje p1 = personajeRepository.findByNombre("Tato_Rey").orElse(null);
         Personaje p2 = personajeRepository.findByNombre("Thrall").orElse(null);
 
         if (p1 != null && p2 != null) {
-            inscripcionRaidRepository.save(new InscripcionRaid(null, raidCastillo.getIdRaid(), p1.getIdPersonaje(), "Aprobada", true, 50000));
-            inscripcionRaidRepository.save(new InscripcionRaid(null, raidCastillo.getIdRaid(), p2.getIdPersonaje(), "Aprobada", true, 45000));
+            inscripcionRaidRepository.save(new InscripcionRaid(null, raidCastillo.getIdRaid(), p1.getIdPersonaje(), "Aprobada", true, 0));
+            inscripcionRaidRepository.save(new InscripcionRaid(null, raidCastillo.getIdRaid(), p2.getIdPersonaje(), "Aprobada", true, 0));
             
-            inscripcionRaidRepository.save(new InscripcionRaid(null, raidDragon.getIdRaid(), p1.getIdPersonaje(), "Aprobada", true, 60000));
+            inscripcionRaidRepository.save(new InscripcionRaid(null, raidDragon.getIdRaid(), p1.getIdPersonaje(), "Aprobada", true, 0));
             // p2 faltó a la segunda raid
             inscripcionRaidRepository.save(new InscripcionRaid(null, raidDragon.getIdRaid(), p2.getIdPersonaje(), "Aprobada", false, 0));
+        }
+
+        // 6b. El líder del clan debe ser un PERSONAJE (el ascenso automático por DKP
+        // compara contra el líder personaje; antes se guardaba el id del jugador).
+        if (p1 != null) {
+            alianza.setIdLider(p1.getIdPersonaje());
+            clanRepository.save(alianza);
+        }
+        if (p2 != null) {
+            horda.setIdLider(p2.getIdPersonaje());
+            clanRepository.save(horda);
         }
 
         System.out.println("=== Datos inyectados con éxito en MongoDB ===");

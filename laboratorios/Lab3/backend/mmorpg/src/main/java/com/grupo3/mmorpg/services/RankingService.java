@@ -179,8 +179,10 @@ public class RankingService {
         // Etapa 1: Proyección para convertir IDs de String a ObjectId para los lookups
         // y mapear boolean 'asistio' a número 1 o 0 para poder sumarlo
         ProjectionOperation convertIdsAndProject = Aggregation.project("danoTotal")
-                .and(ConvertOperators.ToObjectId.toObjectId("personajeId")).as("personajeIdObj")
-                .and(ConvertOperators.ToObjectId.toObjectId("raidId")).as("raidIdObj")
+                // OJO: ConvertOperators no agrega el prefijo '$'; hay que pasarlo explícito
+                // para que $toObjectId use la referencia al campo y no el literal.
+                .and(ConvertOperators.ToObjectId.toObjectId("$personajeId")).as("personajeIdObj")
+                .and(ConvertOperators.ToObjectId.toObjectId("$raidId")).as("raidIdObj")
                 .and(ConditionalOperators.when(Criteria.where("asistio").is(true)).then(1).otherwise(0)).as("asistenciaNum");
 
         // Etapa 2: Lookup con personajes para obtener de qué clan es el jugador
@@ -189,7 +191,7 @@ public class RankingService {
 
         // Etapa 3: Convertir clanId de personaje a ObjectId
         ProjectionOperation projectClanId = Aggregation.project("danoTotal", "raidIdObj", "asistenciaNum", "personaje")
-                .and(ConvertOperators.ToObjectId.toObjectId("personaje.clanId")).as("clanIdObj");
+                .and(ConvertOperators.ToObjectId.toObjectId("$personaje.clanId")).as("clanIdObj");
 
         // Etapa 4: Lookup con clanes para obtener el nombre del clan
         LookupOperation lookupClan = Aggregation.lookup("clanes", "clanIdObj", "_id", "clan");

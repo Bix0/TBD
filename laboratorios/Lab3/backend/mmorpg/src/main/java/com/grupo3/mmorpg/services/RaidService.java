@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.dao.DuplicateKeyException;
@@ -82,6 +83,19 @@ public class RaidService {
         if (raidOpt.isPresent()) {
             Raid raid = raidOpt.get();
             raid.setEstado(estado);
+
+            // Randomizador de desempeño: al completarse la raid se generan el daño total
+            // por inscrito y el tiempo de finalización (antes eran valores hardcodeados del seeder).
+            if ("Completada".equalsIgnoreCase(estado)) {
+                raid.setTiempoFinalizacionMinutos(20 + new Random().nextInt(61)); // 20-80 min
+                for (InscripcionRaid ins : inscripcionRaidRepository.findByRaidId(idRaid)) {
+                    if (Boolean.TRUE.equals(ins.getAsistio())) {
+                        ins.setDanoTotal(10_000 + new Random().nextInt(90_001)); // 10k-100k
+                        inscripcionRaidRepository.save(ins);
+                    }
+                }
+            }
+
             raidRepository.save(raid);
             return 1;
         }

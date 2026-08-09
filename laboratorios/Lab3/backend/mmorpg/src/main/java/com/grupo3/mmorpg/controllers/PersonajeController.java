@@ -1,6 +1,7 @@
 package com.grupo3.mmorpg.controllers;
 
 import com.grupo3.mmorpg.models.Personaje;
+import com.grupo3.mmorpg.services.ClanService;
 import com.grupo3.mmorpg.services.PersonajeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +19,14 @@ import java.util.List;
 public class PersonajeController {
 
     private final PersonajeService personajeService;
+    private final ClanService clanService;
 
-    public PersonajeController(PersonajeService personajeService) {
+    public PersonajeController(
+        PersonajeService personajeService,
+        ClanService clanService
+    ) {
         this.personajeService = personajeService;
+        this.clanService = clanService;
     }
 
     // ==========================================
@@ -95,9 +101,14 @@ public class PersonajeController {
     }
 
     @PutMapping("/{id}/merito")
-    public ResponseEntity<Void> actualizarPuntosMerito(@PathVariable String id, @RequestParam Integer cantidad) {
+    public ResponseEntity<Void> actualizarPuntosMerito(
+        @PathVariable String id,
+        @RequestParam Integer cantidad
+    ) {
         try {
             personajeService.actualizarPuntosMerito(id, cantidad);
+            // Ascenso automático de líder por DKP (equivalente al trigger T4 del Lab1)
+            clanService.verificarAscensoLider(id);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.notFound().build();

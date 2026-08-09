@@ -180,10 +180,12 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
     const pjId = activePj.idPersonaje || activePj.id_personaje;
     const clanId = clan.idClan || clan.id_clan;
 
-    if (
-      activePj.clan &&
-      (activePj.clan.idClan || activePj.clan.id_clan) == clanId
-    ) {
+    // El backend guarda clanId (string), no un objeto clan embebido
+    const clanActualId =
+      activePj.clanId ||
+      (activePj.clan && (activePj.clan.idClan || activePj.clan.id_clan));
+
+    if (clanActualId && String(clanActualId) === String(clanId)) {
       alert("¡Ya perteneces a este clan!");
       return;
     }
@@ -462,9 +464,12 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
                 const colorClan = esAlianza ? "#2196f3" : "#f44336";
 
                 const clanId = clan.idClan || clan.id_clan;
+                const clanActualId =
+                  activePj.clanId ||
+                  (activePj.clan &&
+                    (activePj.clan.idClan || activePj.clan.id_clan));
                 const yaEsMiembro =
-                  activePj.clan &&
-                  (activePj.clan.idClan || activePj.clan.id_clan) == clanId;
+                  clanActualId && String(clanActualId) === String(clanId);
 
                 return (
                   <CircleMarker

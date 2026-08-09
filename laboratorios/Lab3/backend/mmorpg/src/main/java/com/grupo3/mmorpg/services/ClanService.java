@@ -9,6 +9,7 @@ import com.grupo3.mmorpg.repositories.ClanRepository;
 import com.grupo3.mmorpg.repositories.JugadorRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -93,15 +95,80 @@ public class ClanService {
         clanRepository.save(clan);
 
         // Trigger 2 (Lab1) + Auditoría Territorial (Lab2): registrar el cambio de liderazgo
-        // (de quién a quién, cuándo y en qué coordenadas = "Sede de Poder" del clan)
+        // (de quién a quién, cuándo y DÓNDE = "Sede de Poder"). Como el trigger original,
+        // la ubicación es la del NUEVO líder; si no tiene, la sede del clan.
         AuditoriaLiderazgo auditoria = new AuditoriaLiderazgo();
         auditoria.setClanId(idClan);
         auditoria.setAntiguoLiderId(antiguoLider);
         auditoria.setNuevoLiderId(nuevoLider);
         auditoria.setFechaCambio(LocalDateTime.now());
-        auditoria.setUbicacionSuceso(clan.getUbicacion());
+        auditoria.setUbicacionSuceso(
+            personajeService
+                .obtenerPersonaje(nuevoLider)
+                .map(Personaje::getUbicacionActual)
+                .filter(Objects::nonNull)
+                .orElse(clan.getUbicacion())
+        );
         auditoriaRepository.save(auditoria);
         return 1;
+    }
+
+    /**
+     * Ascenso automático de líder por DKP (equivalente al trigger T4 del Lab1):
+     * si el personaje supera en puntos de mérito al líder actual de su clan
+     * (o del clan de su facción si no pertenece a ninguno), asume el liderazgo.
+     * El cambio queda registrado por cambiarLider (auditoría + Sedes de Poder).
+     */
+    @Transactional
+    public void verificarAscensoLider(String idPersonaje) {
+        Personaje personaje = personajeService.obtenerPersonaje(idPersonaje).orElse(null);
+        if (personaje == null) {
+            return;
+        }
+
+        String clanId = personaje.getClanId();
+        if (clanId == null) {
+            // Como el trigger original: si no tiene clan, usa el clan de su facción
+            clanId = clanRepository
+                .findAll()
+                .stream()
+                .filter(c ->
+                    personaje.getFaccion() != null &&
+                    c.getFaccion().equalsIgnoreCase(personaje.getFaccion())
+                )
+                .map(Clan::getIdClan)
+                .findFirst()
+                .orElse(null);
+        }
+        if (clanId == null) {
+            return;
+        }
+
+        Clan clan = clanRepository.findById(clanId).orElse(null);
+        if (clan == null || clan.getIdLider() == null) {
+            return;
+        }
+        if (clan.getIdLider().equals(idPersonaje)) {
+            return; // ya es el líder
+        }
+
+        int dkpLider = personajeService
+            .obtenerPersonaje(clan.getIdLider())
+            .map(p -> p.getPuntosMerito() != null ? p.getPuntosMerito() : 0)
+            .orElse(-1);
+        int dkpPersonaje =
+            personaje.getPuntosMerito() != null ? personaje.getPuntosMerito() : 0;
+
+        if (dkpPersonaje > dkpLider) {
+            cambiarLider(clanId, idPersonaje);
+            System.out.println(
+                "👑 [Ascenso DKP] " +
+                personaje.getNombre() +
+                " superó al líder de " +
+                clan.getNombre() +
+                " y asumió el liderazgo."
+            );
+        }
     }
 
     @Transactional
