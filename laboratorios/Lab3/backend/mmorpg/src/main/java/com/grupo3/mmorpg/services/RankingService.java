@@ -82,6 +82,8 @@ public class RankingService {
                     .build();
 
             Aggregation pipeline = Aggregation.newAggregation(
+                    // Excluir personajes sin clan: un clanId nulo rompería el $merge (error 51132)
+                    Aggregation.match(Criteria.where("clanId").ne(null)),
                     groupByClan,
                     sortByPuntos,
                     mergeToRanking

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   MapContainer,
   ImageOverlay,
@@ -95,6 +95,7 @@ const MapaRaids = () => {
   const [todosPersonajesMapa, setTodosPersonajesMapa] = useState([]); // Todos los personajes geolocalizados
   const [selectedPersonaje, setSelectedPersonaje] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 45, lng: 45 });
+  const [inscritas, setInscritas] = useState(new Set()); // Raids a las que ya te inscribiste en esta sesión
 
   // Estados para Filtros
   const [filtroNombre, setFiltroNombre] = useState("");
@@ -103,8 +104,8 @@ const MapaRaids = () => {
   const userId = localStorage.getItem("userId");
   const activeId = localStorage.getItem("activePersonajeId");
 
-  // Cargar Raids cercanas
-  useEffect(() => {
+  // Cargar Raids cercanas (extraído a función para poder recargar tras inscribirse)
+  const cargarRaidsCercanas = useCallback(() => {
     const personajeId = activeId || selectedPersonaje;
 
     api
@@ -118,7 +119,11 @@ const MapaRaids = () => {
       })
       .then((response) => setRaids(response.data || []))
       .catch((error) => console.error("Error cargando raids:", error));
-  }, [activeId, mapCenter.lat, mapCenter.lng, selectedPersonaje]);
+  }, [activeId, selectedPersonaje, mapCenter.lat, mapCenter.lng]);
+
+  useEffect(() => {
+    cargarRaidsCercanas();
+  }, [cargarRaidsCercanas]);
 
   // Cargar personajes del usuario logueado
   useEffect(() => {
@@ -157,6 +162,9 @@ const MapaRaids = () => {
       const res = await api.post(
         `/api/raids/${idRaid}/inscribir?idPersonaje=${personajeId}`,
       );
+      // Actualiza el popup: marca la raid como inscrita y recarga cupos
+      setInscritas((prev) => new Set(prev).add(idRaid));
+      cargarRaidsCercanas();
       alert(res.data);
     } catch (e) {
       alert(e.response?.data || "Error al inscribirse");
@@ -205,6 +213,13 @@ const MapaRaids = () => {
   const bounds = [
     [0, 0],
     [90, 90],
+  ];
+
+  // Límite de paneo/zoom: un poco más amplio que el mundo para que los popups de raids
+  // cerca del borde superior quepan dentro del mapa (las raids siguen dentro de [0, 90]).
+  const maxBounds = [
+    [-15, -15],
+    [105, 105],
   ];
 
   return (
@@ -268,8 +283,9 @@ const MapaRaids = () => {
       <MapContainer
         crs={L.CRS.Simple}
         bounds={bounds}
-        maxBounds={bounds}
+        maxBounds={maxBounds}
         maxBoundsViscosity={1.0}
+        scrollWheelZoom={false} // La rueda del mouse scrollea la página, no el zoom del mapa
         style={{ height: "700px", width: "100%", backgroundColor: "#000" }}
         className="leaflet-container"
       >
@@ -379,33 +395,39 @@ const MapaRaids = () => {
                   {raid.cuposDps}
                   <hr style={{ borderColor: "#444", margin: "5px 0" }} />
                   {raid.estado === "Programada" ? (
-                    <>
-                      <button
-                        onClick={() => inscribir(raid.idRaid)}
-                        style={{
-                          backgroundColor: "#61dafb",
-                          color: "#000",
-                          border: "none",
-                          padding: "8px 16px",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontWeight: "bold",
-                          width: "100%",
-                        }}
-                      >
-                        ⚔️ Inscribirse
-                      </button>
-                      <p
-                        style={{
-                          fontSize: "11px",
-                          color: "#888",
-                          marginTop: "5px",
-                        }}
-                      >
-                        Usando personaje activo:{" "}
-                        {activeId ? `ID ${activeId}` : "Ninguno"}
+                    inscritas.has(raid.idRaid) ? (
+                      <p style={{ color: "#4caf50", fontSize: "12px" }}>
+                        ✅ Ya estás inscrito a esta raid
                       </p>
-                    </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => inscribir(raid.idRaid)}
+                          style={{
+                            backgroundColor: "#61dafb",
+                            color: "#000",
+                            border: "none",
+                            padding: "8px 16px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontWeight: "bold",
+                            width: "100%",
+                          }}
+                        >
+                          ⚔️ Inscribirse
+                        </button>
+                        <p
+                          style={{
+                            fontSize: "11px",
+                            color: "#888",
+                            marginTop: "5px",
+                          }}
+                        >
+                          Usando personaje activo:{" "}
+                          {activeId ? `ID ${activeId}` : "Ninguno"}
+                        </p>
+                      </>
+                    )
                   ) : (
                     <p style={{ color: "#f44336", fontSize: "12px" }}>
                       🔒 Raid cerrada

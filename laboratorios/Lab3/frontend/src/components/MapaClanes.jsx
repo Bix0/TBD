@@ -33,6 +33,12 @@ const oldIcon = new L.Icon({
   popupAnchor: [0, -24],
 });
 
+// Radio FIJO de búsqueda de clanes cercanos, en unidades del mapa (mundo 0-90).
+// El backend usa $maxDistance en metros: 1 unidad ≈ 111.32 km (misma conversión
+// que usa LootService para la proximidad del boss).
+const RADIO_BUSQUEDA_UDS = 30;
+const RADIO_BUSQUEDA_METROS = Math.round(RADIO_BUSQUEDA_UDS * 111320);
+
 // Ajusta el zoom para que la imagen llene todo el contenedor al cargar
 // (con un paso extra de zoom para que no se vea tan pequeña)
 function FitMapToBounds({ bounds }) {
@@ -46,6 +52,53 @@ function FitMapToBounds({ bounds }) {
   return null;
 }
 
+// Círculo del radio de búsqueda en UNIDADES del mapa (no píxeles fijos):
+// se recalcula con cada zoom para que el radio represente siempre la misma
+// porción del mundo (antes era CircleMarker con píxeles y "flotaba" al hacer zoom).
+function RadioBusqueda({ center, radioUnidades, faccion }) {
+  const map = useMap();
+  const [radioPx, setRadioPx] = useState(0);
+
+  useEffect(() => {
+    const recalcular = () => {
+      // Con CRS.Simple y bounds [0,0]-[90,90]: cuántos píxeles son 1 unidad al zoom actual
+      const p1 = map.latLngToLayerPoint([0, 0]);
+      const p2 = map.latLngToLayerPoint([1, 1]);
+      const pxPorUnidad = Math.abs(p2.y - p1.y) || 1;
+      setRadioPx(Math.max(radioUnidades * pxPorUnidad, 2));
+    };
+    recalcular();
+    map.on("zoom zoomend", recalcular);
+    return () => {
+      map.off("zoom zoomend", recalcular);
+    };
+  }, [map, radioUnidades]);
+
+  return (
+    <CircleMarker
+      center={center}
+      pathOptions={{
+        color: faccion === "Alianza" ? "#2196f3" : "#f44336",
+        fillColor: faccion === "Alianza" ? "#2196f3" : "#f44336",
+        fillOpacity: 0.15,
+        dashArray: "6, 6",
+      }}
+      radius={radioPx}
+    >
+      <Tooltip permanent direction="bottom">
+        <span
+          style={{
+            fontSize: "11px",
+            color: faccion === "Alianza" ? "#2196f3" : "#ff4b4b",
+          }}
+        >
+          Radio de búsqueda: {radioUnidades} uds ({faccion})
+        </span>
+      </Tooltip>
+    </CircleMarker>
+  );
+}
+
 const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
   const [modo, setModo] = useState("calor"); // "calor" | "cercanos" | "sedes"
   const [clanesCalor, setClanesCalor] = useState([]);
@@ -53,8 +106,6 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
   const [personajes, setPersonajes] = useState([]);
   const [activePj, setActivePj] = useState(null);
 
-  // Filtros para clanes cercanos (solo se puede elegir el radio de distancia)
-  const [distancia, setDistancia] = useState(500);
   const [cargandoCercanos, setCargandoCercanos] = useState(false);
 
   const userId = localStorage.getItem("userId");
@@ -98,7 +149,7 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
     const params = {
       lat: activePj.latitud,
       lon: activePj.longitud,
-      distancia: distancia,
+      distancia: RADIO_BUSQUEDA_METROS,
       faccion: activePj.faccion, // La facción se toma automáticamente del personaje
     };
 
@@ -119,7 +170,7 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
     } else {
       cargarClanesCercanos();
     }
-  }, [modo, activePj, distancia]);
+  }, [modo, activePj]);
 
   const unirseAlClan = (clan) => {
     if (!activePj) {
@@ -143,9 +194,11 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
       )
     ) {
       api
-        .post(`/api/clanes/unirse/${clanId}`, pjId, {
-          headers: { "Content-Type": "application/json" },
-        })
+        .post(
+          `/api/clanes/unirse/${clanId}`,
+          { personajeId: pjId },
+          { headers: { "Content-Type": "application/json" } },
+        )
         .then(() => {
           alert(
             `¡${activePj.nombre} se ha unido exitosamente al clan ${clan.nombre}!`,
@@ -252,61 +305,21 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
           </button>
         </div>
 
-        {/* Único filtro permitido en modo Clanes Cercanos: Radio de Distancia */}
-        {modo === "cercanos" && (
+        {/* Info del personaje activo en modo Clanes Cercanos (radio fijo, sin slider) */}
+        {modo === "cercanos" && activePj && (
           <div
             style={{
-              display: "flex",
-              gap: "15px",
-              flexWrap: "wrap",
-              alignItems: "center",
+              fontSize: "13px",
+              color: "#61dafb",
+              backgroundColor: "#1e293b",
+              padding: "6px 12px",
+              borderRadius: "6px",
+              border: "1px solid #3b82f6",
             }}
           >
-            {activePj && (
-              <div
-                style={{
-                  fontSize: "13px",
-                  color: "#61dafb",
-                  backgroundColor: "#1e293b",
-                  padding: "6px 12px",
-                  borderRadius: "6px",
-                  border: "1px solid #3b82f6",
-                }}
-              >
-                🧑 <b>{activePj.nombre}</b> ({activePj.faccion}) | Posición: Y=
-                {activePj.latitud}, X={activePj.longitud}
-              </div>
-            )}
-            <div>
-              <label
-                style={{
-                  fontSize: "12px",
-                  color: "#aaa",
-                  display: "block",
-                  marginBottom: "2px",
-                }}
-              >
-                Radio Distancia (Uds)
-              </label>
-              <input
-                type="number"
-                value={distancia}
-                onChange={(e) =>
-                  setDistancia(Math.max(10, parseInt(e.target.value) || 0))
-                }
-                step="50"
-                min="10"
-                max="2000"
-                style={{
-                  width: "110px",
-                  padding: "6px",
-                  backgroundColor: "#333",
-                  color: "white",
-                  border: "1px solid #555",
-                  borderRadius: "4px",
-                }}
-              />
-            </div>
+            🧑 <b>{activePj.nombre}</b> ({activePj.faccion}) | Posición: Y=
+            {activePj.latitud}, X={activePj.longitud} | Radio:{" "}
+            {RADIO_BUSQUEDA_UDS} uds
           </div>
         )}
       </div>
@@ -432,30 +445,12 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
           activePj.latitud != null &&
           activePj.longitud != null && (
             <>
-              {/* Círculo visual mostrando el radio de búsqueda de PostGIS centrado en el personaje activo */}
-              <CircleMarker
+              {/* Círculo visual del radio de búsqueda en unidades del mapa (se recalcula con el zoom) */}
+              <RadioBusqueda
                 center={[activePj.latitud, activePj.longitud]}
-                pathOptions={{
-                  color: activePj.faccion === "Alianza" ? "#2196f3" : "#f44336",
-                  fillColor:
-                    activePj.faccion === "Alianza" ? "#2196f3" : "#f44336",
-                  fillOpacity: 0.15,
-                  dashArray: "6, 6",
-                }}
-                radius={distancia / 2}
-              >
-                <Tooltip permanent direction="bottom">
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color:
-                        activePj.faccion === "Alianza" ? "#2196f3" : "#ff4b4b",
-                    }}
-                  >
-                    Radio de búsqueda: {distancia} uds ({activePj.faccion})
-                  </span>
-                </Tooltip>
-              </CircleMarker>
+                radioUnidades={RADIO_BUSQUEDA_UDS}
+                faccion={activePj.faccion}
+              />
 
               {/* Renderizar clanes cercanos de la misma facción devueltos por la API */}
               {clanesCercanos.map((clan, index) => {
@@ -583,8 +578,8 @@ const MapaClanes = ({ auditoria = [], liderAlianza, liderHorda }) => {
           <p>
             📍 Mostrando <b>{clanesCercanos.length}</b> clanes de la facción{" "}
             <b>{activePj?.faccion || "N/A"}</b> dentro de un radio de{" "}
-            <b>{distancia}</b> uds desde tu posición (Y={activePj?.latitud}, X=
-            {activePj?.longitud}).
+            <b>{RADIO_BUSQUEDA_UDS}</b> uds desde tu posición (Y=
+            {activePj?.latitud}, X={activePj?.longitud}).
           </p>
         ) : (
           <p>

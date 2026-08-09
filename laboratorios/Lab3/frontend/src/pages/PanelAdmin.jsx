@@ -19,11 +19,13 @@ const bossIconMap = new L.Icon({
 });
 
 // Ajusta el zoom para que el selector muestre el plano completo al cargar
+// (+1 para que no parta tan pequeño, igual que el mapa de raids)
 function FitMapToBounds({ bounds }) {
   const map = useMap();
 
   useEffect(() => {
     map.fitBounds(bounds);
+    map.setZoom(map.getZoom() + 1);
   }, [map]);
 
   return null;
@@ -903,6 +905,11 @@ function PanelAdmin() {
                   [0, 0],
                   [90, 90],
                 ]}
+                maxBounds={[
+                  [0, 0],
+                  [90, 90],
+                ]}
+                maxBoundsViscosity={1.0}
                 style={{
                   height: "250px",
                   width: "100%",

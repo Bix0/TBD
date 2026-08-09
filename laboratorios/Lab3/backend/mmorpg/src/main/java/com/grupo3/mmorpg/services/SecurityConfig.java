@@ -77,6 +77,10 @@ public class SecurityConfig {
                     // Rutas solo para Admin (creación/modificación de datos)
                     .requestMatchers(HttpMethod.POST, "/api/items/**")
                     .hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PUT, "/api/items/**")
+                    .hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/items/**")
+                    .hasRole("ADMIN")
                     .requestMatchers(HttpMethod.POST, "/api/raids")
                     .hasRole("ADMIN") // Crear raid
                     .requestMatchers(HttpMethod.PUT, "/api/raids/**")
@@ -94,6 +98,11 @@ public class SecurityConfig {
                     .requestMatchers(
                         HttpMethod.POST,
                         "/api/raids/*/distribuir-loot-masivo"
+                    )
+                    .hasRole("ADMIN")
+                    .requestMatchers(
+                        HttpMethod.POST,
+                        "/api/raids/*/evento-muerte-boss"
                     )
                     .hasRole("ADMIN")
                     .requestMatchers(

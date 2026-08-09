@@ -24,7 +24,26 @@ function Personajes() {
     // Usamos 'api' en lugar de 'axios', ya no necesitamos configSeguridad ni la URL completa
     api
       .get(`/api/personajes/jugador/${userId}/todos`)
-      .then((res) => setPersonajes(res.data))
+      .then((res) => {
+        const pjs = res.data || [];
+        if (pjs.length === 0) {
+          setPersonajes([]);
+          return;
+        }
+        // El backend guarda clanId (referencia) en MongoDB; el frontend espera p.clan (objeto).
+        // Cargamos los clanes y enriquecemos cada personaje con su clan para mostrarlo.
+        return api.get("/api/clanes").then((clanesRes) => {
+          const clanesMap = new Map(
+            (clanesRes.data || []).map((c) => [c.idClan || c.id_clan, c]),
+          );
+          setPersonajes(
+            pjs.map((p) => ({
+              ...p,
+              clan: p.clanId ? clanesMap.get(p.clanId) || null : null,
+            })),
+          );
+        });
+      })
       .catch(() => setPersonajes([]))
       .finally(() => setLoading(false));
   };
@@ -123,9 +142,11 @@ function Personajes() {
       )
     ) {
       api
-        .post(`/api/clanes/salir/${idClan}`, pjId, {
-          headers: { "Content-Type": "application/json" },
-        })
+        .post(
+          `/api/clanes/salir/${idClan}`,
+          { personajeId: pjId },
+          { headers: { "Content-Type": "application/json" } },
+        )
         .then(() => {
           alert(`${personaje.nombre} ha salido del clan.`);
           cargarPersonajes();
