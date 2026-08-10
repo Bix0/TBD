@@ -150,6 +150,53 @@ El replica set de MongoDB se inicializará solo de forma automática (gracias al
 | GET | `/api/clanes/auditoria` | Historial de cambios de liderazgo (Sedes de Poder) |
 | GET | `/api/clanes/mapa-calor` | Mapa de calor con DKP real por clan |
 
+### Ejemplos de JSON (Documentación de la API)
+
+**1. Login JWT (`POST /api/auth/login`)**
+```json
+{
+  "username": "admin",
+  "password": "123"
+}
+```
+
+**2. Crear un Personaje (`POST /api/personajes`)**
+```json
+{
+  "jugadorId": "60d5ec49f1b2c3d4e5f6a7b8",
+  "clanId": "60d5ec49f1b2c3d4e5f6a7b9",
+  "nombre": "Gandalf",
+  "clase": "Mago",
+  "nivel": 60,
+  "faccion": "La Alianza",
+  "itemLevel": 150,
+  "rolClan": "Healer",
+  "estado": "Activo"
+}
+```
+
+**3. Distribuir Loot Masivo (`POST /api/raids/{id}/distribuir-loot-masivo`)**
+*Demuestra la transacción atómica multi-documento (recibe una lista).*
+```json
+[
+  {
+    "idPersonaje": "60d5ec49f1b2c3d4e5f6a7b8",
+    "idItem": "60d5ec49f1b2c3d4e5f6a7c1",
+    "costoDkp": 50
+  },
+  {
+    "idPersonaje": "60d5ec49f1b2c3d4e5f6a7b9",
+    "idItem": "60d5ec49f1b2c3d4e5f6a7c2",
+    "costoDkp": 100
+  }
+]
+```
+
+**4. Inscribir Personaje a Raid (`POST /api/raids/{id}/inscribir?idPersonaje=...`)**
+*(Este endpoint recibe el ObjectId del personaje por parámetro URL `?idPersonaje=`, no requiere Body JSON).*
+
+*(Puedes ver la documentación extendida en `backend/mmorpg/API_ENDPOINTS.md`)*
+
 ---
 
 ## Paginas del Frontend
