@@ -63,7 +63,7 @@ public class PersonajeRepository {
      */
     public Optional<Personaje> findById(Long id) {
         String sql = "SELECT * FROM Personaje WHERE id_personaje = ?";
-        List<Personaje> result = jdbcTemplate.query(sql, new Object[]{id}, PERSONAJE_ROW_MAPPER);
+        List<Personaje> result = jdbcTemplate.query(sql, PERSONAJE_ROW_MAPPER, id);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
     
@@ -112,7 +112,7 @@ public class PersonajeRepository {
      */
     public List<Personaje> findAllByClanId(Long clanId) {
         String sql = "SELECT * FROM Personaje WHERE id_clan = ? ORDER BY id_personaje";
-        return jdbcTemplate.query(sql, new Object[]{clanId}, PERSONAJE_ROW_MAPPER);
+        return jdbcTemplate.query(sql, PERSONAJE_ROW_MAPPER, clanId);
     }
     
     /**
@@ -122,7 +122,7 @@ public class PersonajeRepository {
      */
     public List<Personaje> findByClase(String clase) {
         String sql = "SELECT * FROM Personaje WHERE clase = ? ORDER BY id_personaje";
-        return jdbcTemplate.query(sql, new Object[]{clase}, PERSONAJE_ROW_MAPPER);
+        return jdbcTemplate.query(sql, PERSONAJE_ROW_MAPPER, clase);
     }
     
     /**
@@ -131,7 +131,7 @@ public class PersonajeRepository {
      */
     public List<Personaje> findByRolClan(String rolClan) {
         String sql = "SELECT * FROM Personaje WHERE rol_clan = ? ORDER BY id_personaje";
-        return jdbcTemplate.query(sql, new Object[]{rolClan}, PERSONAJE_ROW_MAPPER);
+        return jdbcTemplate.query(sql, PERSONAJE_ROW_MAPPER, rolClan);
     }
     
     /**
@@ -140,7 +140,7 @@ public class PersonajeRepository {
      */
     public List<Personaje> findByItemLevelMin(Integer itemLevel) {
         String sql = "SELECT * FROM Personaje WHERE item_level >= ? ORDER BY item_level DESC";
-        return jdbcTemplate.query(sql, new Object[]{itemLevel}, PERSONAJE_ROW_MAPPER);
+        return jdbcTemplate.query(sql, PERSONAJE_ROW_MAPPER, itemLevel);
     }
     
     /**
@@ -158,12 +158,12 @@ public class PersonajeRepository {
      */
     public Optional<Personaje> findByJugadorId(Long jugadorId) {
         String sql = "SELECT * FROM Personaje WHERE id_jugador = ? ORDER BY id_personaje LIMIT 1";
-        List<Personaje> result = jdbcTemplate.query(sql, new Object[]{jugadorId}, PERSONAJE_ROW_MAPPER);
+        List<Personaje> result = jdbcTemplate.query(sql, PERSONAJE_ROW_MAPPER, jugadorId);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
     public List<Personaje> findAllByJugadorIdList(Long jugadorId) {
         String sql = "SELECT * FROM Personaje WHERE id_jugador = ? ORDER BY id_personaje";
-        return jdbcTemplate.query(sql, new Object[]{jugadorId}, PERSONAJE_ROW_MAPPER);
+        return jdbcTemplate.query(sql, PERSONAJE_ROW_MAPPER, jugadorId);
     }
 
 }

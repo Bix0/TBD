@@ -56,7 +56,7 @@ public class ItemRepository {
      */
     public Optional<Item> findById(Long id) {
         String sql = "SELECT * FROM Item WHERE id_item = ?";
-        List<Item> result = jdbcTemplate.query(sql, new Object[]{id}, ITEM_ROW_MAPPER);
+        List<Item> result = jdbcTemplate.query(sql, ITEM_ROW_MAPPER, id);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
     
@@ -95,7 +95,7 @@ public class ItemRepository {
      */
     public Optional<Item> findByName(String nombre) {
         String sql = "SELECT * FROM Item WHERE nombre = ?";
-        List<Item> result = jdbcTemplate.query(sql, new Object[]{nombre}, ITEM_ROW_MAPPER);
+        List<Item> result = jdbcTemplate.query(sql, ITEM_ROW_MAPPER, nombre);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
     
@@ -105,7 +105,7 @@ public class ItemRepository {
      */
     public List<Item> findByItemLevelMin(Integer itemLevel) {
         String sql = "SELECT * FROM Item WHERE item_lvl >= ? ORDER BY item_lvl DESC";
-        return jdbcTemplate.query(sql, new Object[]{itemLevel}, ITEM_ROW_MAPPER);
+        return jdbcTemplate.query(sql, ITEM_ROW_MAPPER, itemLevel);
     }
     
     // METODOS PARA ITEM_CLASE_PERMITIDA (Falta implementar)
@@ -133,7 +133,7 @@ public class ItemRepository {
      */
     public List<String> getClasesPermitidas(Long idItem) {
         String sql = "SELECT clase_permitida FROM Item_Clase_Permitida WHERE id_item = ?";
-        return jdbcTemplate.query(sql, new Object[]{idItem}, (rs, rowNum) -> rs.getString("clase_permitida"));
+        return jdbcTemplate.query(sql, (rs, rowNum) -> rs.getString("clase_permitida"), idItem);
     }
     
     /**
@@ -142,7 +142,7 @@ public class ItemRepository {
      */
     public boolean isClasePermitida(Long idItem, String clase) {
         String sql = "SELECT COUNT(*) FROM Item_Clase_Permitida WHERE id_item = ? AND clase_permitida = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, new Object[]{idItem, clase}, Integer.class);
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, idItem, clase);
         return count != null && count > 0;
     }
     
@@ -152,6 +152,6 @@ public class ItemRepository {
      */
     public List<ItemClasePermitida> getClasesPermitidasCompleto(Long idItem) {
         String sql = "SELECT * FROM Item_Clase_Permitida WHERE id_item = ?";
-        return jdbcTemplate.query(sql, new Object[]{idItem}, ITEM_CLASE_ROW_MAPPER);
+        return jdbcTemplate.query(sql, ITEM_CLASE_ROW_MAPPER, idItem);
     }
 }

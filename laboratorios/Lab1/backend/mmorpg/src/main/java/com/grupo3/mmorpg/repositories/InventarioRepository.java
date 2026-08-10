@@ -54,7 +54,7 @@ public class InventarioRepository {
      */
     public Optional<Inventario> findById(Long id) {
         String sql = "SELECT * FROM Inventario WHERE id_inventario = ?";
-        List<Inventario> result = jdbcTemplate.query(sql, new Object[]{id}, INVENTARIO_ROW_MAPPER);
+        List<Inventario> result = jdbcTemplate.query(sql, INVENTARIO_ROW_MAPPER, id);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
     
@@ -98,7 +98,7 @@ public class InventarioRepository {
      */
     public List<Inventario> findByPersonajeId(Long personajeId) {
         String sql = "SELECT * FROM Inventario WHERE id_personaje = ? ORDER BY id_inventario";
-        return jdbcTemplate.query(sql, new Object[]{personajeId}, INVENTARIO_ROW_MAPPER);
+        return jdbcTemplate.query(sql, INVENTARIO_ROW_MAPPER, personajeId);
     }
     
     /**
@@ -107,7 +107,7 @@ public class InventarioRepository {
      */
     public List<Inventario> findEquipadosByPersonajeId(Long personajeId) {
         String sql = "SELECT * FROM Inventario WHERE id_personaje = ? AND equipado = TRUE ORDER BY id_inventario";
-        return jdbcTemplate.query(sql, new Object[]{personajeId}, INVENTARIO_ROW_MAPPER);
+        return jdbcTemplate.query(sql, INVENTARIO_ROW_MAPPER, personajeId);
     }
     
     /**
@@ -116,7 +116,7 @@ public class InventarioRepository {
      */
     public Optional<Inventario> findByPersonajeAndItem(Long personajeId, Long itemId) {
         String sql = "SELECT * FROM Inventario WHERE id_personaje = ? AND id_item = ?";
-        List<Inventario> result = jdbcTemplate.query(sql, new Object[]{personajeId, itemId}, INVENTARIO_ROW_MAPPER);
+        List<Inventario> result = jdbcTemplate.query(sql, INVENTARIO_ROW_MAPPER, personajeId, itemId);
         return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
     
@@ -153,7 +153,7 @@ public class InventarioRepository {
      */
     public boolean tieneItem(Long personajeId, Long itemId) {
         String sql = "SELECT COUNT(*) FROM Inventario WHERE id_personaje = ? AND id_item = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, new Object[]{personajeId, itemId}, Integer.class);
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, personajeId, itemId);
         return count != null && count > 0;
     }
     
@@ -163,7 +163,7 @@ public class InventarioRepository {
      */
     public int contarItems(Long personajeId) {
         String sql = "SELECT COUNT(*) FROM Inventario WHERE id_personaje = ?";
-        Integer count = jdbcTemplate.queryForObject(sql, new Object[]{personajeId}, Integer.class);
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, personajeId);
         return count != null ? count : 0;
     }
 }

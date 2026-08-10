@@ -34,12 +34,12 @@ const handleRegister = async () => {
     }
 
     if (password.value !== confirmPassword.value) {
-        error.value = "Las contrasenias no coinciden";
+        error.value = "Las contraseñas no coinciden"
         return;
     }
 
     if (password.value.length < 4) {
-        error.value = "La contrasenia debe tener al menos 4 caracteres";
+        error.value = "La contraseña debe tener al menos 4 caracteres"
         return;
     }
 
@@ -92,7 +92,7 @@ const handleRegister = async () => {
                 </div>
 
                 <div class="field">
-                    <label for="password">Contrasenia</label>
+                    <label for="password">Contraseña</label>
                     <input
                         id="password"
                         v-model="password"
@@ -103,12 +103,12 @@ const handleRegister = async () => {
                 </div>
 
                 <div class="field">
-                    <label for="confirmPassword">Confirmar Contrasenia</label>
+                    <label for="confirmPassword">Confirmar Contraseña</label>
                     <input
                         id="confirmPassword"
                         v-model="confirmPassword"
                         type="password"
-                        placeholder="repite la contrasenia"
+                        placeholder="repite la contraseña"
                         autocomplete="new-password"
                     />
                 </div>

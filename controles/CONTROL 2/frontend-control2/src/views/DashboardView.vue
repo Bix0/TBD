@@ -11,7 +11,8 @@ import "leaflet/dist/leaflet.css";
 // Fix del ícono de marcador de leaflet transparente
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconRetinaUrl:
+        "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
     iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
@@ -32,6 +33,7 @@ const newTask = ref({
     dueDate: "",
     idGeoPoint: null,
 });
+const today = new Date().toISOString().split("T")[0];
 const geoPoints = ref([]);
 
 // Reportes y Alertas
@@ -165,16 +167,23 @@ const loadUserSectorCounts = async () => {
     }
 };
 
-const handleCreateTask = async () => {
-    if (!newTask.value.title || !newTask.value.idGeoPoint) return;
-    try {
-        await api.post(`/tasks/createtask/${userId.value}`, newTask.value);
-        newTask.value = {
-            title: "",
-            description: "",
-            dueDate: "",
-            idGeoPoint: null,
-        };
+	const handleCreateTask = async () => {
+	    if (!newTask.value.title || !newTask.value.idGeoPoint) return;
+	    try {
+	        if (
+	            newTask.value.dueDate &&
+	            newTask.value.dueDate < new Date().toISOString().split("T")[0]
+	        ) {
+	            alert("La fecha de vencimiento no puede ser anterior a la de hoy");
+	            return;
+	        }
+	        await api.post(`/tasks/createtask/${userId.value}`, newTask.value);
+	        newTask.value = {
+	            title: "",
+	            description: "",
+	            dueDate: "",
+	            idGeoPoint: null,
+	        };
         loadTasks();
         loadReports();
     } catch (e) {
@@ -214,8 +223,14 @@ const handleDeleteTask = async (idTask) => {
 
 // --- FUNCIONES DEL MODAL DEL MAPA ---
 const handleViewMap = async (task) => {
-    if (!task.geoPoint || task.geoPoint.latitude == null || task.geoPoint.longitude == null) {
-        alert("Esta tarea no tiene coordenadas geográficas registradas válidas.");
+    if (
+        !task.geoPoint ||
+        task.geoPoint.latitude == null ||
+        task.geoPoint.longitude == null
+    ) {
+        alert(
+            "Esta tarea no tiene coordenadas geográficas registradas válidas.",
+        );
         return;
     }
 
@@ -229,7 +244,7 @@ const handleViewMap = async (task) => {
 
     // Inicializamos el mapa en el contenedor del modal
     viewMapInstance = L.map("task-map-container").setView(latLng, 16);
-    
+
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
     }).addTo(viewMapInstance);
@@ -238,14 +253,14 @@ const handleViewMap = async (task) => {
 
     // InvalidateSize asegura que los tiles del mapa carguen correctamente al abrirse dentro de un Modal
     setTimeout(() => {
-        if(viewMapInstance) viewMapInstance.invalidateSize();
+        if (viewMapInstance) viewMapInstance.invalidateSize();
     }, 150);
 };
 
 const closeMapModal = () => {
     showMapModal.value = false;
     selectedMapTask.value = null;
-    
+
     // Es vital destruir la instancia al cerrar para evitar el error "Map container is already initialized"
     if (viewMapInstance) {
         viewMapInstance.remove();
@@ -263,15 +278,29 @@ const handleLogout = () => {
 
 <template>
     <div class="dashboard">
-
-        <div v-if="showMapModal" class="modal-overlay" @click.self="closeMapModal">
+        <div
+            v-if="showMapModal"
+            class="modal-overlay"
+            @click.self="closeMapModal"
+        >
             <div class="modal-content">
                 <h3>Ubicación: {{ selectedMapTask?.title }}</h3>
                 <p style="margin-bottom: 12px; color: var(--text-h)">
-                    📍 Sector: {{ selectedMapTask?.geoPoint?.sector || 'Sin sector' }}
+                    📍 Sector:
+                    {{ selectedMapTask?.geoPoint?.sector || "Sin sector" }}
                 </p>
-                <div id="task-map-container" style="height: 350px; width: 100%; border-radius: 8px; z-index: 1;"></div>
-                <button class="primary-btn close-btn" @click="closeMapModal">Cerrar Mapa</button>
+                <div
+                    id="task-map-container"
+                    style="
+                        height: 350px;
+                        width: 100%;
+                        border-radius: 8px;
+                        z-index: 1;
+                    "
+                ></div>
+                <button class="primary-btn close-btn" @click="closeMapModal">
+                    Cerrar Mapa
+                </button>
             </div>
         </div>
 
@@ -309,7 +338,12 @@ const handleLogout = () => {
                             type="text"
                             placeholder="Descripción"
                         />
-                        <input v-model="newTask.dueDate" type="date" required />
+        		                <input
+        		                    v-model="newTask.dueDate"
+        		                    type="date"
+        		                    :min="today"
+        		                    required
+        		                />
 
                         <select v-model="newTask.idGeoPoint" required>
                             <option :value="null" disabled selected>

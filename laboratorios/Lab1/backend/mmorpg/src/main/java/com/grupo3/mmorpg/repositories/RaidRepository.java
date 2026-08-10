@@ -64,12 +64,12 @@ public class RaidRepository {
 
     public List<Raid> findByEstado(String estado) {
         String sql = "SELECT * FROM Raid WHERE estado = ? ORDER BY fecha DESC";
-        return jdbcTemplate.query(sql, new Object[]{estado}, RAID_ROW_MAPPER);
+        return jdbcTemplate.query(sql, RAID_ROW_MAPPER, estado);
     }
 
     public List<Raid> findByItemLevelMin(Integer itemLevel) {
         String sql = "SELECT * FROM Raid WHERE item_level_requerido >= ? ORDER BY item_level_requerido DESC";
-        return jdbcTemplate.query(sql, new Object[]{itemLevel}, RAID_ROW_MAPPER);
+        return jdbcTemplate.query(sql, RAID_ROW_MAPPER, itemLevel);
     }
 
     public List<Raid> findProgramadas() {
@@ -81,7 +81,7 @@ public class RaidRepository {
         String sql = "CALL sp_crear_raid_e_invitar(?, ?, ?, ?, ?, ?)";
         jdbcTemplate.update(sql, nombre, fecha, itemLevel, tanques, heals, dps);
         String sqlGetId = "SELECT id_raid FROM Raid WHERE nombre = ? ORDER BY id_raid DESC LIMIT 1";
-        List<Long> result = jdbcTemplate.query(sqlGetId, new Object[]{nombre}, (rs, rowNum) -> rs.getLong("id_raid"));
+        List<Long> result = jdbcTemplate.query(sqlGetId,  (rs, rowNum) -> rs.getLong("id_raid"), nombre);
         return result.isEmpty() ? null : result.get(0);
     }
 
@@ -99,7 +99,7 @@ public class RaidRepository {
         String sql = "SELECT ir.id_inscripcion, ir.id_personaje, p.nombre, p.clase, ir.estado, ir.asistio " +
                 "FROM Inscripcion_Raid ir JOIN Personaje p ON ir.id_personaje = p.id_personaje " +
                 "WHERE ir.id_raid = ? ORDER BY ir.id_inscripcion";
-        return jdbcTemplate.query(sql, new Object[]{idRaid}, (rs, rowNum) -> new Object[]{rs.getLong("id_inscripcion"), rs.getLong("id_personaje"), rs.getString("nombre"), rs.getString("clase"), rs.getString("estado"), rs.getBoolean("asistio")});
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new Object[]{rs.getLong("id_inscripcion"), rs.getLong("id_personaje"), rs.getString("nombre"), rs.getString("clase"), rs.getString("estado"), rs.getBoolean("asistio")}, idRaid);
     }
 
     public boolean estaPersonajeInscrito(Long idRaid, Long idPersonaje) {
@@ -110,7 +110,7 @@ public class RaidRepository {
 
     public List<Object[]> contarInscripcionesPorEstado(Long idRaid) {
         String sql = "SELECT estado, COUNT(*) FROM Inscripcion_Raid WHERE id_raid = ? GROUP BY estado";
-        return jdbcTemplate.query(sql, new Object[]{idRaid}, (rs, rowNum) -> new Object[]{rs.getString("estado"), rs.getInt("COUNT(*)")});
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new Object[]{rs.getString("estado"), rs.getInt("COUNT(*)")}, idRaid);
     }
 
     public void saveCupos(Raid raid) {

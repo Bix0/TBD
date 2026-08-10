@@ -61,7 +61,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "CROSS JOIN users u " +
             "JOIN geo_point gp_user ON u.id_geo_point = gp_user.id_geo_point " +
             "WHERE u.id_user = :idUser " +
-            "AND ut.id_user = :idUser",
+            "AND ut.id_user = :idUser " +
+            "AND t.status = 'Completada'",
         nativeQuery = true
     )
     Double getAverageDistanceOfCompletedTasks(@Param("idUser") Long idUser);
