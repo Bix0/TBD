@@ -200,6 +200,13 @@ public class RaidController {
         @RequestParam(required = false) String idItem,
         @RequestParam(required = false) String idPersonaje
     ) {
+        Optional<Raid> raidOpt = raidRepository.findById(id);
+        if (raidOpt.isPresent() && "Completada".equalsIgnoreCase(raidOpt.get().getEstado())) {
+            return ResponseEntity.badRequest().body(
+                "❌ La Raid ya se encuentra completada y cerrada."
+            );
+        }
+
         Document event = new Document();
         event.put("raidId", id);
         event.put("eventType", "BOSS_DEATH");

@@ -1058,13 +1058,13 @@ function PanelAdmin() {
               textAlign: "center",
             }}
           >
-            <h2 style={{ color: "#ff9800", marginTop: 0 }}>
-              Raid: {modalSimulacion.nombre}
+            <h2 style={{ color: modalSimulacion.estado === "Completada" ? "#4caf50" : "#ff9800", marginTop: 0 }}>
+              Raid: {modalSimulacion.nombre} {modalSimulacion.estado === "Completada" && " (Completada)"}
             </h2>
             <select
               value={itemRecompensa}
               onChange={(e) => setItemRecompensa(e.target.value)}
-              disabled={simulando}
+              disabled={simulando || modalSimulacion.estado === "Completada"}
               style={{
                 width: "100%",
                 padding: "10px",
@@ -1135,33 +1135,33 @@ function PanelAdmin() {
               )}
               <button
                 onClick={ejecutarSimulacion}
-                disabled={simulando}
+                disabled={simulando || modalSimulacion.estado === "Completada"}
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: simulando ? "#444" : "#ff9800",
-                  color: simulando ? "#888" : "black",
+                  backgroundColor: (simulando || modalSimulacion.estado === "Completada") ? "#444" : "#ff9800",
+                  color: (simulando || modalSimulacion.estado === "Completada") ? "#888" : "black",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: simulando ? "not-allowed" : "pointer",
+                  cursor: (simulando || modalSimulacion.estado === "Completada") ? "not-allowed" : "pointer",
                   fontWeight: "bold",
                 }}
               >
-                {simulando ? "Batallando..." : "Iniciar Simulación"}
+                {simulando ? "Batallando..." : modalSimulacion.estado === "Completada" ? "Raid Finalizada" : "Iniciar Simulación"}
               </button>
               <button
                 onClick={dispararMuerteBoss}
-                disabled={simulando}
+                disabled={simulando || modalSimulacion.estado === "Completada"}
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: simulando ? "#444" : "#f44336",
-                  color: simulando ? "#888" : "white",
+                  backgroundColor: (simulando || modalSimulacion.estado === "Completada") ? "#444" : "#f44336",
+                  color: (simulando || modalSimulacion.estado === "Completada") ? "#888" : "white",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: simulando ? "not-allowed" : "pointer",
+                  cursor: (simulando || modalSimulacion.estado === "Completada") ? "not-allowed" : "pointer",
                   fontWeight: "bold",
                 }}
               >
-                💀 Muerte del Boss (ChangeStream)
+                {modalSimulacion.estado === "Completada" ? "Raid Cerrada" : "💀 Muerte del Boss (ChangeStream)"}
               </button>
             </div>
           </div>
