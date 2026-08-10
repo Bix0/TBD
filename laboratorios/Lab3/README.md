@@ -111,11 +111,17 @@ promedio de tiempo de finalización) → `$sort` por daño desc / tiempo asc.
 - Docker 24+ con Docker Compose
 
 ### Levantar todo
+
+1. Abre una terminal y **asegúrate de estar posicionado en esta misma carpeta** (la carpeta raíz del `Lab3`, donde se encuentra el archivo `docker-compose.yml`).
+2. Ejecuta el siguiente comando para construir y levantar todos los contenedores (Frontend, Backend y Base de Datos):
+
 ```bash
 docker compose up -d --build
 ```
 
-El replica set se inicializa solo (`mongo-setup` con retry + healthchecks).
+El replica set de MongoDB se inicializará solo de forma automática (gracias al contenedor `mongo-setup` con retry + healthchecks). Puede tardar unos segundos la primera vez.
+
+> **Nota:** Para apagar el sistema y limpiar todo al terminar de revisar, ejecuta `docker compose down -v`.
 
 ### Acceso
 | Servicio | URL |
