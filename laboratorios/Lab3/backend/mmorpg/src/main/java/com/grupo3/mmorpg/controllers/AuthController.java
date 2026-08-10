@@ -77,7 +77,9 @@ public class AuthController {
     public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String password = body.get("password");
-        String rol = body.getOrDefault("rol", "Usuario");
+        // Seguridad (RBAC): el rol nunca se acepta del cliente; todo registro es "Usuario".
+        // Evita que cualquiera se auto-registre como Admin.
+        String rol = "Usuario";
 
         if (username == null || password == null || username.isBlank() || password.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Username y password son requeridos"));

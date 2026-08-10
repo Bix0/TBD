@@ -1,26 +1,50 @@
 package com.grupo3.mmorpg.services;
 
+import com.grupo3.mmorpg.models.HistorialLoot;
+import com.grupo3.mmorpg.models.Item;
 import com.grupo3.mmorpg.models.Jugador;
+import com.grupo3.mmorpg.models.Personaje;
+import com.grupo3.mmorpg.models.Raid;
+import com.grupo3.mmorpg.repositories.HistorialLootRepository;
+import com.grupo3.mmorpg.repositories.ItemRepository;
 import com.grupo3.mmorpg.repositories.JugadorRepository;
+import com.grupo3.mmorpg.repositories.PersonajeRepository;
+import com.grupo3.mmorpg.repositories.RaidRepository;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-
 /**
- * Servicio para operaciones relacionadas con Jugadores en MongoDB
+ * Servicio para operaciones relacionadas con Jugadores en MongoDB.
  */
 @Service
 public class JugadorService {
 
     private final JugadorRepository jugadorRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PersonajeRepository personajeRepository;
+    private final HistorialLootRepository historialLootRepository;
+    private final ItemRepository itemRepository;
+    private final RaidRepository raidRepository;
 
-    public JugadorService(JugadorRepository jugadorRepository, PasswordEncoder passwordEncoder) {
+    public JugadorService(
+        JugadorRepository jugadorRepository,
+        PasswordEncoder passwordEncoder,
+        PersonajeRepository personajeRepository,
+        HistorialLootRepository historialLootRepository,
+        ItemRepository itemRepository,
+        RaidRepository raidRepository
+    ) {
         this.jugadorRepository = jugadorRepository;
         this.passwordEncoder = passwordEncoder;
+        this.personajeRepository = personajeRepository;
+        this.historialLootRepository = historialLootRepository;
+        this.itemRepository = itemRepository;
+        this.raidRepository = raidRepository;
     }
 
     @Transactional
@@ -61,8 +85,54 @@ public class JugadorService {
         return jugadorRepository.existsByUsername(username);
     }
 
+    /**
+     * Historial de botin de todos los personajes de un jugador, con el formato
+     * que espera el frontend: Object[]{ fecha, nombrePersonaje, nombreItem, nombreRaid }
+     */
     public List<Object[]> obtenerHistorialBotinJugador(String idJugador) {
-        // Adaptado para colecciones de MongoDB (retorna lista vacía o proyecciones personalizadas)
-        return List.of();
+        List<Personaje> personajes = personajeRepository.findByJugadorId(
+            idJugador
+        );
+        if (personajes.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> idsPersonajes = personajes
+            .stream()
+            .map(Personaje::getIdPersonaje)
+            .toList();
+        List<HistorialLoot> historial =
+            historialLootRepository.findByPersonajeIdIn(idsPersonajes);
+        if (historial.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, String> nombresPersonajes = personajes
+            .stream()
+            .collect(
+                Collectors.toMap(
+                    Personaje::getIdPersonaje,
+                    Personaje::getNombre
+                )
+            );
+        Map<String, String> nombresItems = itemRepository
+            .findAll()
+            .stream()
+            .collect(Collectors.toMap(Item::getIdItem, Item::getNombre));
+        Map<String, String> nombresRaids = raidRepository
+            .findAll()
+            .stream()
+            .collect(Collectors.toMap(Raid::getIdRaid, Raid::getNombre));
+
+        return historial
+            .stream()
+            .sorted((a, b) -> b.getFecha().compareTo(a.getFecha()))
+            .map(h -> new Object[] {
+                h.getFecha(),
+                nombresPersonajes.getOrDefault(h.getPersonajeId(), "?"),
+                nombresItems.getOrDefault(h.getItemId(), "?"),
+                nombresRaids.getOrDefault(h.getRaidId(), "?"),
+            })
+            .toList();
     }
 }

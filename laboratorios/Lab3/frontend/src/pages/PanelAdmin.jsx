@@ -5,6 +5,7 @@ import {
   MapContainer,
   ImageOverlay,
   Marker,
+  useMap,
   useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
@@ -17,11 +18,25 @@ const bossIconMap = new L.Icon({
   popupAnchor: [0, -30],
 });
 
+// Ajusta el zoom para que el selector muestre el plano completo al cargar
+// (+1 para que no parta tan pequeño, igual que el mapa de raids)
+function FitMapToBounds({ bounds }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.fitBounds(bounds);
+    map.setZoom(map.getZoom() + 1);
+  }, [map]);
+
+  return null;
+}
+
 function MapaSelector({ onCoordsChange }) {
   const [pos, setPos] = useState(null);
+  // Mismo rango que el resto del mapa (GeoJSON 2dsphere): clics en [0, 90]
   const bounds = [
     [0, 0],
-    [1000, 1000],
+    [90, 90],
   ];
 
   useMapEvents({
@@ -58,10 +73,10 @@ function PanelAdmin() {
     cupos_healer: 0,
     cupos_dps: 0,
   });
-  const [bossCoords, setBossCoords] = useState({ lat: 500, lng: 500 });
+  const [bossCoords, setBossCoords] = useState({ lat: 45, lng: 45 });
 
   const [personajeMover, setPersonajeMover] = useState("");
-  const [moverCoords, setMoverCoords] = useState({ lat: 500, lng: 500 });
+  const [moverCoords, setMoverCoords] = useState({ lat: 45, lng: 45 });
 
   const [godDkp, setGodDkp] = useState({ idPersonaje: "", cantidad: 0 });
   const [godLoot, setGodLoot] = useState({
@@ -245,12 +260,44 @@ function PanelAdmin() {
     }
   };
 
+  // Dispara el evento BOSS_DEATH en raid_events: el ChangeStream del backend
+  // reparte el loot automáticamente (ganador aleatorio entre inscritos cercanos
+  // al boss con DKP suficiente) y actualiza la colección materializada de clanes.
+  const dispararMuerteBoss = async () => {
+    if (!modalSimulacion) return;
+    const idRaid = modalSimulacion.id_raid || modalSimulacion.idRaid;
+    setMensajeSimulacion(
+      "💀 ¡Jefe derrotado! El ChangeStream está procesando el loot...",
+    );
+    try {
+      const params = itemRecompensa ? { idItem: itemRecompensa } : {};
+      const res = await api.post(
+        `/api/raids/${idRaid}/evento-muerte-boss`,
+        null,
+        { params },
+      );
+      setMensajeSimulacion(res.data);
+      cargarDatosAdmin();
+    } catch (err) {
+      setMensajeSimulacion(
+        "❌ Error: " + (err.response?.data || err.message),
+      );
+    }
+  };
+
   const finalizarBatalla = async (inscritos) => {
     const pjsInscritos = inscritos
       .map((ins) =>
         personajes.find((p) => (p.id_personaje || p.idPersonaje) === ins[1]),
       )
       .filter(Boolean);
+
+    if (pjsInscritos.length === 0) {
+      setSimulando(false);
+      return setMensajeSimulacion(
+        "❌ No hay personajes válidos inscritos para repartir loot.",
+      );
+    }
 
     pjsInscritos.sort((a, b) => {
       const dkpA =
@@ -261,31 +308,43 @@ function PanelAdmin() {
     });
 
     const ganador = pjsInscritos[0];
+    // Comparación de strings: itemRecompensa guarda el ObjectId (ej. "6a725a..."),
+    // NO usar parseInt porque convierte el ObjectId a un número sin sentido.
     const itemGanado = items.find(
-      (i) => (i.id_item || i.idItem) === parseInt(itemRecompensa),
+      (i) => String(i.id_item || i.idItem || i._id) === String(itemRecompensa),
     );
+
+    if (!itemGanado) {
+      setSimulando(false);
+      return setMensajeSimulacion("❌ No se encontró el ítem de recompensa.");
+    }
 
     const costoFinal =
       itemGanado.ganancia_dkp !== undefined
         ? itemGanado.ganancia_dkp
-        : itemGanado.gananciaDkp;
+        : itemGanado.gananciaDkp !== undefined
+          ? itemGanado.gananciaDkp
+          : 0;
     const idGanador = ganador.id_personaje || ganador.idPersonaje;
     const idItem = itemGanado.id_item || itemGanado.idItem;
     const idRaid = modalSimulacion.id_raid || modalSimulacion.idRaid;
 
     setMensajeSimulacion(
-      `🏆 ¡Jefe Muerto! Entregando objeto a ${ganador.nombre}...`,
+      `🏆 ¡Jefe Muerto! Entregando ${itemGanado.nombre} a ${ganador.nombre}...`,
     );
 
     try {
-      await api.post(
-        `/api/raids/distribuir-loot?idPersonaje=${idGanador}&idItem=${idItem}&idRaid=${idRaid}&costoDkp=${costoFinal}`,
-      );
+      // Distribución vía endpoint MASIVO: 1 reparto (el ganador) en una transacción
+      // atómica, con validación de participación (inscrito) y garantía anti-duplicado
+      // del índice único {raidId, itemId}.
+      await api.post(`/api/raids/${idRaid}/distribuir-loot-masivo`, [
+        { idPersonaje: idGanador, idItem: idItem, costoDkp: costoFinal },
+      ]);
       await api.put(`/api/raids/${idRaid}/estado?estado=Completada`);
       await api.post("/api/ranking/refresh");
 
       setMensajeSimulacion(
-        `✅ Éxito: Se entregó el ítem a ${ganador.nombre} y se descontaron ${costoFinal} DKP.`,
+        `✅ Éxito: Se entregó ${itemGanado.nombre} a ${ganador.nombre} y se descontaron ${costoFinal} DKP.`,
       );
       cargarDatosAdmin();
     } catch (err) {
@@ -833,7 +892,7 @@ function PanelAdmin() {
                   }
                   step="1"
                   min="0"
-                  max="1000"
+                  max="90"
                   style={{ width: "100%", padding: "6px" }}
                 />
               </div>
@@ -852,7 +911,7 @@ function PanelAdmin() {
                   }
                   step="1"
                   min="0"
-                  max="1000"
+                  max="90"
                   style={{ width: "100%", padding: "6px" }}
                 />
               </div>
@@ -869,8 +928,13 @@ function PanelAdmin() {
                 crs={L.CRS.Simple}
                 bounds={[
                   [0, 0],
-                  [1000, 1000],
+                  [90, 90],
                 ]}
+                maxBounds={[
+                  [0, 0],
+                  [90, 90],
+                ]}
+                maxBoundsViscosity={1.0}
                 style={{
                   height: "250px",
                   width: "100%",
@@ -882,7 +946,13 @@ function PanelAdmin() {
                   url="/mapa_juego.png"
                   bounds={[
                     [0, 0],
-                    [1000, 1000],
+                    [90, 90],
+                  ]}
+                />
+                <FitMapToBounds
+                  bounds={[
+                    [0, 0],
+                    [90, 90],
                   ]}
                 />
                 <MapaSelector onCoordsChange={(c) => setBossCoords(c)} />
@@ -988,13 +1058,13 @@ function PanelAdmin() {
               textAlign: "center",
             }}
           >
-            <h2 style={{ color: "#ff9800", marginTop: 0 }}>
-              Raid: {modalSimulacion.nombre}
+            <h2 style={{ color: modalSimulacion.estado === "Completada" ? "#4caf50" : "#ff9800", marginTop: 0 }}>
+              Raid: {modalSimulacion.nombre} {modalSimulacion.estado === "Completada" && " (Completada)"}
             </h2>
             <select
               value={itemRecompensa}
               onChange={(e) => setItemRecompensa(e.target.value)}
-              disabled={simulando}
+              disabled={simulando || modalSimulacion.estado === "Completada"}
               style={{
                 width: "100%",
                 padding: "10px",
@@ -1065,18 +1135,33 @@ function PanelAdmin() {
               )}
               <button
                 onClick={ejecutarSimulacion}
-                disabled={simulando}
+                disabled={simulando || modalSimulacion.estado === "Completada"}
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: simulando ? "#444" : "#ff9800",
-                  color: simulando ? "#888" : "black",
+                  backgroundColor: (simulando || modalSimulacion.estado === "Completada") ? "#444" : "#ff9800",
+                  color: (simulando || modalSimulacion.estado === "Completada") ? "#888" : "black",
                   border: "none",
                   borderRadius: "4px",
-                  cursor: simulando ? "not-allowed" : "pointer",
+                  cursor: (simulando || modalSimulacion.estado === "Completada") ? "not-allowed" : "pointer",
                   fontWeight: "bold",
                 }}
               >
-                {simulando ? "Batallando..." : "Iniciar Simulación"}
+                {simulando ? "Batallando..." : modalSimulacion.estado === "Completada" ? "Raid Finalizada" : "Iniciar Simulación"}
+              </button>
+              <button
+                onClick={dispararMuerteBoss}
+                disabled={simulando || modalSimulacion.estado === "Completada"}
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: (simulando || modalSimulacion.estado === "Completada") ? "#444" : "#f44336",
+                  color: (simulando || modalSimulacion.estado === "Completada") ? "#888" : "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  cursor: (simulando || modalSimulacion.estado === "Completada") ? "not-allowed" : "pointer",
+                  fontWeight: "bold",
+                }}
+              >
+                {modalSimulacion.estado === "Completada" ? "Raid Cerrada" : "💀 Muerte del Boss (ChangeStream)"}
               </button>
             </div>
           </div>

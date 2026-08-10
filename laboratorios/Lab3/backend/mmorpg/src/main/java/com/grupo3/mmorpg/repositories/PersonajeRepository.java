@@ -14,14 +14,14 @@ import java.util.Optional;
 @Repository
 public interface PersonajeRepository extends MongoRepository<Personaje, String> {
 
+    Optional<Personaje> findByNombre(String nombre);
+
     List<Personaje> findByClanId(String clanId);
 
     List<Personaje> findByClase(String clase);
 
     List<Personaje> findByRolClan(String rolClan);
 
-    // En Mongo podemos usar la nomenclatura de métodos de Spring o un @Query.
-    // Usamos nomenclatura directa para que ordene automáticamente.
     List<Personaje> findByItemLevelGreaterThanEqualOrderByItemLevelDesc(Integer minLevel);
 
     Optional<Personaje> findFirstByJugadorId(String jugadorId);
@@ -34,7 +34,20 @@ public interface PersonajeRepository extends MongoRepository<Personaje, String> 
 
     /**
      * Equivalente al ST_DWithin de PostGIS.
-     * Usa el operador $near y $maxDistance (en metros para índices 2dsphere).
+     * Consulta geoespacial usando el operador $near y $maxDistance sobre índice 2dsphere.
+     */
+    @Query("{ " +
+            "  'ubicacionActual': { " +
+            "    $near: { " +
+            "      $geometry: { type: 'Point', coordinates: [ ?0, ?1 ] }, " +
+            "      $maxDistance: ?2 " +
+            "    } " +
+            "  } " +
+            "}")
+    List<Personaje> findPersonajesCercanos(double longitud, double latitud, double distanciaMetros);
+
+    /**
+     * Consulta geoespacial para buscar Healers cercanos.
      */
     @Query("{ " +
             "  'ubicacionActual': { " +
@@ -54,16 +67,9 @@ public interface PersonajeRepository extends MongoRepository<Personaje, String> 
             "}")
     List<Personaje> findHealersCercanos(double longitud, double latitud, double distanciaMetros);
 
-    /**
-     * Personajes activos en el mapa (tienen coordenadas)
-     * Equivalente a "IS NOT NULL" en SQL
-     */
     @Query("{ 'ubicacionActual': { $ne: null } }")
     List<Personaje> findAllConUbicacion();
 
-    /**
-     * Personajes activos en el mapa filtrados por rol
-     */
     @Query("{ 'ubicacionActual': { $ne: null }, 'rolClan': { $regex: ?0, $options: 'i' } }")
     List<Personaje> findByRolClanIgnoreCaseAndUbicacionNotNull(String rol);
 }

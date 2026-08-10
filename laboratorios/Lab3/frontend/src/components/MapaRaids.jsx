@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   MapContainer,
   ImageOverlay,
+  CircleMarker,
   Marker,
   Popup,
+  Tooltip,
   useMap,
   useMapEvents,
 } from "react-leaflet";
@@ -33,6 +35,50 @@ const otherPlayerIcon = new L.Icon({
   popupAnchor: [0, -32],
 });
 
+// Rango de dropeo de loot (debe coincidir con DISTANCIA_PROXIMIDAD_JEFE_UNIDADES del backend):
+// 50 uds en el mundo 0-1000 del Lab2 = 5% del mapa -> 4.5 uds en el mundo 0-90 (~5).
+const RADIO_LOOT_UDS = 5;
+
+// Círculo del rango de loot en UNIDADES del mapa (se recalcula con el zoom,
+// igual que el radio de búsqueda del mapa de clanes).
+function RadioLoot({ center, radioUnidades }) {
+  const map = useMap();
+  const [radioPx, setRadioPx] = useState(0);
+
+  useEffect(() => {
+    const recalcular = () => {
+      const p1 = map.latLngToLayerPoint([0, 0]);
+      const p2 = map.latLngToLayerPoint([1, 1]);
+      const pxPorUnidad = Math.abs(p2.y - p1.y) || 1;
+      setRadioPx(Math.max(radioUnidades * pxPorUnidad, 2));
+    };
+    recalcular();
+    map.on("zoom zoomend", recalcular);
+    return () => {
+      map.off("zoom zoomend", recalcular);
+    };
+  }, [map, radioUnidades]);
+
+  return (
+    <CircleMarker
+      center={center}
+      pathOptions={{
+        color: "#ff4b4b",
+        fillColor: "#ff0000",
+        fillOpacity: 0.12,
+        dashArray: "6, 6",
+      }}
+      radius={radioPx}
+    >
+      <Tooltip permanent direction="bottom">
+        <span style={{ fontSize: "11px", color: "#ff4b4b" }}>
+          Rango de loot: {radioUnidades} uds
+        </span>
+      </Tooltip>
+    </CircleMarker>
+  );
+}
+
 function RaidMapController({ onCenterChange }) {
   const map = useMap();
 
@@ -55,9 +101,23 @@ function RaidMapController({ onCenterChange }) {
   return null;
 }
 
-function PlayerMovementController({ activePersonajeId, onMove }) {
+// Ajusta el zoom para que la imagen llene todo el contenedor al cargar
+// (con un paso extra de zoom para que no se vea tan pequeña)
+function FitMapToBounds({ bounds }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.fitBounds(bounds);
+    map.setZoom(map.getZoom() + 1);
+  }, [map]);
+
+  return null;
+}
+
+function PlayerMovementController({ activePersonajeId, onMove, onMapClick }) {
   useMapEvents({
     click(e) {
+      if (onMapClick) onMapClick();
       if (!activePersonajeId) return;
       const { lat, lng } = e.latlng;
       const roundedLat = Math.round(lat);
@@ -81,7 +141,9 @@ const MapaRaids = () => {
   const [personajes, setPersonajes] = useState([]); // Personajes del usuario actual
   const [todosPersonajesMapa, setTodosPersonajesMapa] = useState([]); // Todos los personajes geolocalizados
   const [selectedPersonaje, setSelectedPersonaje] = useState("");
-  const [mapCenter, setMapCenter] = useState({ lat: 500, lng: 500 });
+  const [mapCenter, setMapCenter] = useState({ lat: 45, lng: 45 });
+  const [inscritas, setInscritas] = useState(new Set()); // Raids a las que ya te inscribiste en esta sesión
+  const [raidSeleccionada, setRaidSeleccionada] = useState(null); // Raid con popup abierto (para mostrar rango de loot)
 
   // Estados para Filtros
   const [filtroNombre, setFiltroNombre] = useState("");
@@ -90,8 +152,8 @@ const MapaRaids = () => {
   const userId = localStorage.getItem("userId");
   const activeId = localStorage.getItem("activePersonajeId");
 
-  // Cargar Raids cercanas
-  useEffect(() => {
+  // Cargar Raids cercanas (extraído a función para poder recargar tras inscribirse)
+  const cargarRaidsCercanas = useCallback(() => {
     const personajeId = activeId || selectedPersonaje;
 
     api
@@ -105,7 +167,11 @@ const MapaRaids = () => {
       })
       .then((response) => setRaids(response.data || []))
       .catch((error) => console.error("Error cargando raids:", error));
-  }, [activeId, mapCenter.lat, mapCenter.lng, selectedPersonaje]);
+  }, [activeId, selectedPersonaje, mapCenter.lat, mapCenter.lng]);
+
+  useEffect(() => {
+    cargarRaidsCercanas();
+  }, [cargarRaidsCercanas]);
 
   // Cargar personajes del usuario logueado
   useEffect(() => {
@@ -144,6 +210,9 @@ const MapaRaids = () => {
       const res = await api.post(
         `/api/raids/${idRaid}/inscribir?idPersonaje=${personajeId}`,
       );
+      // Actualiza el popup: marca la raid como inscrita y recarga cupos
+      setInscritas((prev) => new Set(prev).add(idRaid));
+      cargarRaidsCercanas();
       alert(res.data);
     } catch (e) {
       alert(e.response?.data || "Error al inscribirse");
@@ -187,9 +256,18 @@ const MapaRaids = () => {
     return cumpleNombre && cumpleRol;
   });
 
+  // El backend usa GeoJSON (2dsphere): lat [-90, 90], lng [-180, 180].
+  // El mapa del juego 0-1000 se mapea a 0-90 para que los clics generen coordenadas validas.
   const bounds = [
     [0, 0],
-    [1000, 1000],
+    [90, 90],
+  ];
+
+  // Límite de paneo/zoom: un poco más amplio que el mundo para que los popups de raids
+  // cerca del borde superior quepan dentro del mapa (las raids siguen dentro de [0, 90]).
+  const maxBounds = [
+    [-15, -15],
+    [105, 105],
   ];
 
   return (
@@ -253,15 +331,18 @@ const MapaRaids = () => {
       <MapContainer
         crs={L.CRS.Simple}
         bounds={bounds}
-        maxBounds={bounds}
+        maxBounds={maxBounds}
         maxBoundsViscosity={1.0}
+        scrollWheelZoom={false} // La rueda del mouse scrollea la página, no el zoom del mapa
         style={{ height: "700px", width: "100%", backgroundColor: "#000" }}
         className="leaflet-container"
       >
         <RaidMapController onCenterChange={setMapCenter} />
+        <FitMapToBounds bounds={bounds} />
         <PlayerMovementController
           activePersonajeId={activeId || selectedPersonaje}
           onMove={handlePersonajeMoved}
+          onMapClick={() => setRaidSeleccionada(null)}
         />
         <ImageOverlay url="/mapa_juego.png" bounds={bounds} />
 
@@ -348,7 +429,12 @@ const MapaRaids = () => {
           if (lat === 0 && lon === 0) return null;
 
           return (
-            <Marker key={raid.idRaid} position={[lat, lon]} icon={bossIcon}>
+            <Marker
+              key={raid.idRaid}
+              position={[lat, lon]}
+              icon={bossIcon}
+              eventHandlers={{ click: () => setRaidSeleccionada(raid.idRaid) }}
+            >
               <Popup>
                 <div style={{ textAlign: "center", minWidth: "180px" }}>
                   <strong style={{ color: "#aa3bff", fontSize: "16px" }}>
@@ -363,33 +449,39 @@ const MapaRaids = () => {
                   {raid.cuposDps}
                   <hr style={{ borderColor: "#444", margin: "5px 0" }} />
                   {raid.estado === "Programada" ? (
-                    <>
-                      <button
-                        onClick={() => inscribir(raid.idRaid)}
-                        style={{
-                          backgroundColor: "#61dafb",
-                          color: "#000",
-                          border: "none",
-                          padding: "8px 16px",
-                          borderRadius: "4px",
-                          cursor: "pointer",
-                          fontWeight: "bold",
-                          width: "100%",
-                        }}
-                      >
-                        ⚔️ Inscribirse
-                      </button>
-                      <p
-                        style={{
-                          fontSize: "11px",
-                          color: "#888",
-                          marginTop: "5px",
-                        }}
-                      >
-                        Usando personaje activo:{" "}
-                        {activeId ? `ID ${activeId}` : "Ninguno"}
+                    inscritas.has(raid.idRaid) ? (
+                      <p style={{ color: "#4caf50", fontSize: "12px" }}>
+                        ✅ Ya estás inscrito a esta raid
                       </p>
-                    </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => inscribir(raid.idRaid)}
+                          style={{
+                            backgroundColor: "#61dafb",
+                            color: "#000",
+                            border: "none",
+                            padding: "8px 16px",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            fontWeight: "bold",
+                            width: "100%",
+                          }}
+                        >
+                          ⚔️ Inscribirse
+                        </button>
+                        <p
+                          style={{
+                            fontSize: "11px",
+                            color: "#888",
+                            marginTop: "5px",
+                          }}
+                        >
+                          Usando personaje activo:{" "}
+                          {activeId ? `ID ${activeId}` : "Ninguno"}
+                        </p>
+                      </>
+                    )
                   ) : (
                     <p style={{ color: "#f44336", fontSize: "12px" }}>
                       🔒 Raid cerrada
@@ -400,6 +492,24 @@ const MapaRaids = () => {
             </Marker>
           );
         })}
+
+        {/* Círculo del rango de loot de la raid seleccionada (popup abierto) */}
+        {(() => {
+          const raidSel = raids.find((r) => r.idRaid === raidSeleccionada);
+          if (!raidSel) return null;
+          const lat =
+            raidSel.latitud ||
+            raidSel.ubicacionBoss?.y ||
+            raidSel.ubicacionBoss?.coordinates?.[1] ||
+            0;
+          const lon =
+            raidSel.longitud ||
+            raidSel.ubicacionBoss?.x ||
+            raidSel.ubicacionBoss?.coordinates?.[0] ||
+            0;
+          if (lat === 0 && lon === 0) return null;
+          return <RadioLoot center={[lat, lon]} radioUnidades={RADIO_LOOT_UDS} />;
+        })()}
       </MapContainer>
     </div>
   );

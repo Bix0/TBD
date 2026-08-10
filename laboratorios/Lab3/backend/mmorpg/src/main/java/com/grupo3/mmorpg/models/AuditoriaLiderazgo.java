@@ -7,8 +7,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.CompoundIndexes;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexType;
 import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
@@ -21,23 +24,29 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+// Estrategia de Índices (Laboratorio 3): Índice compuesto para consultar el historial de cambios ordenado por clan y fecha
+@CompoundIndexes({
+        @CompoundIndex(name = "clan_fecha_idx", def = "{'clanId': 1, 'fechaCambio': -1}")
+})
 public class AuditoriaLiderazgo {
 
     @Id
-    private String idAuditoria; // Cambiado a String para el ObjectId de MongoDB
+    private String idAuditoria; // ObjectId de MongoDB mapeado como String
 
     // En MongoDB guardamos las referencias como IDs en lugar de objetos completos
+    @Indexed // Índice simple para acelerar las búsquedas de auditoría asociadas a un Clan específico
     private String clanId;
 
     private String antiguoLiderId;
 
     private String nuevoLiderId;
 
+    @Indexed // Índice simple para filtrar o ordenar los eventos de auditoría cronológicamente
     private LocalDateTime fechaCambio = LocalDateTime.now();
 
     // --- MANEJO GEOESPACIAL EN MONGODB (GeoJSON) ---
     @JsonIgnore
-    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE) // Soporte espacial para el suceso
+    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE) // Soporte espacial obligatorio para consultas geográficas del suceso
     private GeoJsonPoint ubicacionSuceso;
 
     @JsonProperty("latitud")

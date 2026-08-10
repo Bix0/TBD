@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Map;
 
 /**
  * Controller REST para operaciones con Clanes en MongoDB
@@ -94,8 +96,15 @@ public class ClanController {
     }
 
     @PostMapping("/unirse/{idClan}")
-    public ResponseEntity<Void> unirseAlClan(@PathVariable String idClan, @RequestBody String personajeId) {
+    public ResponseEntity<Void> unirseAlClan(
+        @PathVariable String idClan,
+        @RequestBody Map<String, String> body
+    ) {
         try {
+            String personajeId = body.get("personajeId");
+            if (personajeId == null || personajeId.isBlank()) {
+                return ResponseEntity.badRequest().build();
+            }
             clanService.unirseAlClan(idClan, personajeId);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -104,8 +113,15 @@ public class ClanController {
     }
 
     @PostMapping("/salir/{idClan}")
-    public ResponseEntity<Void> salirDeClan(@PathVariable String idClan, @RequestBody String personajeId) {
+    public ResponseEntity<Void> salirDeClan(
+        @PathVariable String idClan,
+        @RequestBody Map<String, String> body
+    ) {
         try {
+            String personajeId = body.get("personajeId");
+            if (personajeId == null || personajeId.isBlank()) {
+                return ResponseEntity.badRequest().build();
+            }
             clanService.salirDeClan(idClan, personajeId);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -150,7 +166,7 @@ public class ClanController {
     }
 
     @GetMapping("/mapa-calor")
-    public ResponseEntity<List<Clan>> getMapaCalor() {
-        return ResponseEntity.ok(clanRepository.obtenerMapaCalorClanes());
+    public ResponseEntity<List<Map<String, Object>>> getMapaCalor() {
+        return ResponseEntity.ok(clanService.obtenerMapaCalorConDkp());
     }
 }
