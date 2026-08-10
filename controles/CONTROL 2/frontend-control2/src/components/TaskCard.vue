@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+
 
 const props = defineProps({
   task: { type: Object, required: true },
@@ -52,6 +53,13 @@ const completeTask = () => {
 const viewMap = () => {
   emit('view-map', props.task)
 }
+
+watch(() => props.geoPoints, (nuevosDatos) => {
+  if (nuevosDatos && nuevosDatos.length > 0) {
+    console.log("Datos reales de ubicación:", nuevosDatos)
+  }
+}, { immediate: true })
+
 </script>
 
 <template>
