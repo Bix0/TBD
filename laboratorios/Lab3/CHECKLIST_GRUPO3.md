@@ -6,9 +6,10 @@ Esta lista contiene los 6 requerimientos técnicos avanzados de MongoDB que debe
   - **Objetivo:** Justificar e implementar la decisión de diseño para los *Personajes*.
   - **Detalle:** Decidir si embeber los personajes dentro del documento del Jugador o referenciarlos en una colección propia, considerando que cada personaje participa en múltiples raids de forma independiente.
 
-- [ ] **2. Validación de Esquema ($jsonSchema)**
-  - **Objetivo:** Regla de validación para la asignación de botín (Loot).
-  - **Detalle:** Impedir a nivel de base de datos que se asigne un ítem de Loot a un personaje que no participó en la Raid, o que ya se encuentre "caído" (fuera de combate) al momento de la distribución.
+- [X] **2. Validación de Esquema ($jsonSchema)**
+  - **Objetivo:** Regla de validación para la asignación de botín (Loot) y validación de esquemas global.
+  - **Detalle:** Se implementaron validadores `$jsonSchema` a nivel de colección para todas las colecciones del sistema (`historial_loot`, `jugadores`, `personajes`, `clanes`, `raids`, `items`, `inscripciones_raid`, `inventarios`, `auditoria_liderazgo`), garantizando tipos BSON, campos obligatorios, valores enum y rangos válidos con nivel estricto (`validationLevel: strict`, `validationAction: error`).
+
 
 - [ ] **3. Transacción Multi-Documento (ACID)**
   - **Objetivo:** Distribución segura de Loot en eventos de Raid.
