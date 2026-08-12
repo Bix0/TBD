@@ -156,7 +156,7 @@ El replica set de MongoDB se inicializará solo de forma automática (gracias al
 ```json
 {
   "username": "admin",
-  "password": "123"
+  "password": "123456"
 }
 ```
 
